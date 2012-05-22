@@ -3,17 +3,20 @@ function CodePlayer(url, selector, options) {
     this.lines = [];
     this.options = (options ? options : {});
     var self = this;
+    var currentStep = 0;
     var jQelement = $(selector);
-    var played, frozen, cursor, nextStep, displayMode;
+    var pauseAt = 0;
+    var played, frozen, cursor, nextStep, displayMode, prevDisplayMode;
 
     function init () {
-	displayMode = (self.options["mode"]=="show" ? "show" : "type"); // "type" for progressive display, "show" for diret display
+	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for diret display
 	played = [""];
 	frozen = false;
 	cursor = { line:0,col:0};
 	nextStep = function() {};
 	this.onFinish = function() {};
-    };
+	this.onNext = manageHistory;
+    };  
 
     this.start = function () {
 	init();
@@ -78,9 +81,13 @@ function CodePlayer(url, selector, options) {
     }
 
     function pause(next) {
-	if (displayMode == "type") {
+	currentStep++;
+	if (displayMode == "type" || currentStep == pauseAt) {
 	    message("Press spacebar to continue");
-            nextStep = next;		    
+            nextStep = next;
+	    if (currentStep == pauseAt && displayMode != prevDisplayMode) {
+		displayMode = prevDisplayMode;
+	    }
 	} else {
 	    next();
 	}
@@ -90,7 +97,19 @@ function CodePlayer(url, selector, options) {
 	if (!frozen) {
 	    message("");
 	    nextStep();
+	    this.onNext();
 	}
+    }
+
+    function manageHistory() {
+	history.pushState({step:currentStep}, "Step " + currentStep, "#s" + currentStep);
+	window.addEventListener("popstate",
+				function (state) {
+				    pauseAt = state.step;
+				    prevDisplayMode = displayMode;
+				    displayMode = "show";
+				    self.restart();
+				});
     }
 
     function setCursor(search, mode) {
