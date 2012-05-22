@@ -1,3 +1,7 @@
+body {
+ background:#aaa;
+}
+
 #instr {
  position:absolute;
  bottom:0;
@@ -17,6 +21,7 @@ font-size:3em;
 .codeplayer pre {
   white-space: pre-wrap;
   margin:0;
+  background:#fff;
 }
 
 .codeplayer .front, .codeplayer .back {
@@ -40,6 +45,8 @@ font-size:3em;
  z-index:900;
  -webkit-transform: rotateY(0deg);
  -moz-transform: rotateY(0deg);
+ -moz-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+ -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
 }
 
 .codeplayer.flip .front {
@@ -57,4 +64,6 @@ font-size:3em;
     z-index: 1000;
     -webkit-transform: rotateY(0deg);
     -moz-transform: rotateY(0deg);
+ -moz-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+ -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
 }

@@ -165,9 +165,10 @@ function CodePlayer(url, selector, options) {
 		    iframe.attr("src",relUrl.resolve(self.url));
 		    slideContainer.html();
 		    slideContainer.append(iframe);
+		    iframe.attr("height",codeContainer.get(0).clientHeight);
 		    jQelement.addClass("flip");		    
 		}
-		finishLine(next);
+		setTimeout(function() {finishLine(next);}, 400);
 	    } else {
 		jQelement.removeClass("flip");		    
 		var newline = played[cursor.line].slice(0,cursor.col) +  line[0] + played[cursor.line].slice(cursor.col);
