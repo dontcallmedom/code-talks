@@ -1,14 +1,20 @@
 function CodePlayer(url, selector) {
     this.url = url;
-    this.self = this;
     this.lines = [];
-    this.initialized = false;
+    var self = this;
     var jQelement = $(selector);
-    var played = [""];
-    var cursor = { line:0,col:0};
-    var nextStep = function() {};
+    var played, frozen, cursor, nextStep;
 
-    this.init = function () {
+    function init () {
+	played = [""];
+	frozen = false;
+	cursor = { line:0,col:0};
+	nextStep = function() {};
+	this.onFinish = function() {};
+    };
+
+    this.start = function () {
+	init();
 	window.addEventListener(
 	    "keydown",
 	    function(event) {
@@ -24,12 +30,37 @@ function CodePlayer(url, selector) {
 	$.ajax(
 	    {
 		url: "example-data", dataType:'text', 
-		success:function(data) {this.lines = data.split("\n"); this.initialized = true; playLines(this.lines);},
-		error: function(err) { console.log(error);}});
+		success:function(data) {self.lines = data.split("\n");  playLines(self.lines);},
+		error: function(err) { console.log(error);}}
+	);
+	jQelement.after("<p id='instr'></p>");
+    };
+
+    this.restart = function() {
+	init();
+	message("");
+	playLines(this.lines);
+    };
+
+    this.freeze = function() {
+	frozen = true;
+    };
+
+    this.unfreeze = function() {
+	frozen = false;
     };
 
     function playLines(lines) {
-	playLine(lines[0]+"\n", function () { if (lines.length > 1) playLines(lines.slice(1));});
+	playLine(lines[0]+"\n",
+		 function () {
+		     if (lines.length > 1) {
+			 playLines(lines.slice(1));
+		     } else {
+			 message("Finished!");
+			 self.freeze();
+			 self.onFinish();			 
+		     }
+		 });
     }
 
     function finishLine(next) {
@@ -40,12 +71,20 @@ function CodePlayer(url, selector) {
 	next();
     }
 
+    function message(text) {
+	$("#instr").text(text);
+    }
+
     function pause(next) {
+	message("Press spacebar to continue");
         nextStep = next;	
     }
 
     function unpause() {
-	nextStep();
+	if (!frozen) {
+	    message("");
+	    nextStep();
+	}
     }
 
     function setCursor(search, mode) {
@@ -108,5 +147,12 @@ function CodePlayer(url, selector) {
 
 jQuery(document).ready(function ($) {
   var player = new CodePlayer("example-data", "#play");
-  player.init();
+  player.onFinish = function() {
+      var restart = $("<p><input type='button' value='Restart'></p>").insertAfter($("#play"));
+      restart.click(function() {
+			player.restart();
+			restart.remove();
+		    });      
+  };
+  player.start();
 });
