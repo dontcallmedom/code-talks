@@ -4,5 +4,6 @@
 <body>
 </body>
 </html>
-#0,0:<!doctype html>
-@1,-1: manifest="cache.manifest"
+#i<html>§<!doctype html>
+#i</head>§<meta name="viewport">
+#a<html§ manifest="cache.manifest"
