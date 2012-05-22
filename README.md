@@ -8,3 +8,5 @@ That script uses the following syntax:
 * the position of the code to be added/inserted is determined by the string before the "§" character; the first match in the code displayed so far determines where the code is appended/inserted
 * the actual code to be inserted is the one that appears after the "§"
 * #@ allows to show the content of an external resource (e.g. to give explanations); the url of the resource to be included needs to follow the @ sign, e.g. #@foo.html will include foo.html
+
+See it [in action on an example](http://dontcallmedom.github.com/code-talks/player.html).
