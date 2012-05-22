@@ -8,7 +8,9 @@
 </html>
 #p
 #i<html>§<!doctype html>
+#p
 #i<title>§<meta charset=utf-8>
 #p
 #i</head>§<meta name="viewport">
+#p
 #a<html§ manifest="cache.manifest"
