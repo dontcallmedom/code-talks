@@ -1,9 +1,14 @@
 <html>
 <head>
+<title>Hello World</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 </body>
 </html>
+#p
 #i<html>§<!doctype html>
+#i<title>§<meta charset=utf-8>
+#p
 #i</head>§<meta name="viewport">
 #a<html§ manifest="cache.manifest"
