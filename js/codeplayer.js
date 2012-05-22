@@ -1,11 +1,13 @@
-function CodePlayer(url, selector) {
+function CodePlayer(url, selector, options) {
     this.url = url;
     this.lines = [];
+    this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var played, frozen, cursor, nextStep;
+    var played, frozen, cursor, nextStep, displayMode;
 
     function init () {
+	displayMode = (self.options["mode"]=="show" ? "show" : "type"); // "type" for progressive display, "show" for diret display
 	played = [""];
 	frozen = false;
 	cursor = { line:0,col:0};
@@ -76,8 +78,12 @@ function CodePlayer(url, selector) {
     }
 
     function pause(next) {
-	message("Press spacebar to continue");
-        nextStep = next;	
+	if (displayMode == "type") {
+	    message("Press spacebar to continue");
+            nextStep = next;		    
+	} else {
+	    next();
+	}
     }
 
     function unpause() {
@@ -134,7 +140,12 @@ function CodePlayer(url, selector) {
 		jQelement.text(played.join(""));
 		cursor.col++;
 		if (line.length > 1 ) {
-		    setTimeout(function() { playLine(line.slice(1), next);}, 10);	 
+		    if (displayMode == "type") {
+			setTimeout(function() { playLine(line.slice(1), next);}, 10);	
+		    } else {
+			playLine(line.slice(1), next);
+		    }
+
 		} else {
 		    finishLine(next);
 		}
