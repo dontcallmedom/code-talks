@@ -1,12 +1,15 @@
 function CodePlayer(url, selector, options) {
-    this.url = url;
+    this.url = new URI(url);
     this.lines = [];
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var played, frozen, cursor, nextStep, displayMode, prevDisplayMode;
+    var played, frozen, cursor, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer;
 
     function init () {
+	jQelement.addClass("codeplayer");
+	codeContainer = $("<pre class='front prettyprint'></pre>").appendTo(jQelement);
+	slideContainer = $("<div class='back'></div>").appendTo(jQelement);
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
 	played = [""];
 	frozen = false;
@@ -20,7 +23,7 @@ function CodePlayer(url, selector, options) {
 				    cursor = state.cursor;
 				    nextStep = function() {};
 				    played = state.played;
-				    setContent(state.played.join(""));
+				    setCode(state.played.join(""));
 				    prettyPrint();
 				    playLines(self.lines.slice(played.length - 1));
 				});
@@ -99,7 +102,6 @@ function CodePlayer(url, selector, options) {
     }
 
     function unpause() {
-	console.log(Date());
 	if (!frozen) {
 	    message("");
 	    nextStep();
@@ -133,9 +135,9 @@ function CodePlayer(url, selector, options) {
 	}	
     }
 
-    function setContent(content) {
-	jQelement.html();
-	jQelement.text(content);	
+    function setCode(code) {
+	codeContainer.html();
+	codeContainer.text(code);	
     }
 
     function playLine(line, next) {
@@ -143,7 +145,7 @@ function CodePlayer(url, selector, options) {
 	if (line.length > 0) {
 	    if (line[0] == '#') {
 		command = line[1];
-		if (command != "p") {
+		if (command == "a" || command == "i") {
 		    var comp = line.slice(2).split("§");
 		    line = comp.slice(1).join("§");
 		    var search = comp[0];
@@ -155,10 +157,22 @@ function CodePlayer(url, selector, options) {
 	    }
 	    if (command == "p") {
 		pause(next);
+	    } else if (command == "@") {
+		// #@foo means show "foo" in an iframe in slideContainer
+		if (line.length > 2) {
+		    var iframe = $("<iframe width='100%'></iframe>");
+		    var relUrl = new URI(line.slice(2));
+		    iframe.attr("src",relUrl.resolve(self.url));
+		    slideContainer.html();
+		    slideContainer.append(iframe);
+		    jQelement.addClass("flip");		    
+		}
+		finishLine(next);
 	    } else {
+		jQelement.removeClass("flip");		    
 		var newline = played[cursor.line].slice(0,cursor.col) +  line[0] + played[cursor.line].slice(cursor.col);
 		played[cursor.line] = newline;
-		setContent(played.join(""));
+		setCode(played.join(""));
 		cursor.col++;
 		if (line.length > 1 ) {
 		    if (displayMode == "type") {

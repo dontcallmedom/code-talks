@@ -1,0 +1,60 @@
+#instr {
+ position:absolute;
+ bottom:0;
+ left:0;
+}
+
+.codeplayer {
+position:relative;
+width: 750px;
+font-size:3em;
+-webkit-perspective: 600px;
+-moz-perspective: 600px;
+-o-perspective: 600px;
+-ms-perspective: 600px;
+}
+
+.codeplayer pre {
+  white-space: pre-wrap;
+  margin:0;
+}
+
+.codeplayer .front, .codeplayer .back {
+ position:absolute;
+ top:0;
+ left:0;
+ width: inherit;
+ height: inherit;
+ -webkit-transform-style: preserve-3d;
+ -webkit-backface-visibility: hidden;
+ -moz-transform-style: preserve-3d;
+ -moz-backface-visibility: hidden;
+ /* -- transition is the magic sauce for animation -- */
+ -o-transition: all .4s ease-in-out;
+ -ms-transition: all .4s ease-in-out;
+ -moz-transition: all .4s ease-in-out;
+ -webkit-transition: all .4s ease-in-out;
+ transition: all .4s ease-in-out;
+}
+.codeplayer .front {
+ z-index:900;
+ -webkit-transform: rotateY(0deg);
+ -moz-transform: rotateY(0deg);
+}
+
+.codeplayer.flip .front {
+    z-index: 900;
+    -webkit-transform: rotateY(180deg);
+    -moz-transform: rotateY(180deg);
+}
+
+.codeplayer .back {
+    -webkit-transform: rotateY(-180deg);
+    -moz-transform: rotateY(-180deg);
+}
+
+.codeplayer.flip .back {
+    z-index: 1000;
+    -webkit-transform: rotateY(0deg);
+    -moz-transform: rotateY(0deg);
+}

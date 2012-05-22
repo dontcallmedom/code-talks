@@ -2,20 +2,21 @@
 <html>
 <head>
 <meta charset=utf-8>
-<style>body { font-size:2em;}</style>
 <title>Code Player</title>
 <link href="css/prettify.css" rel="stylesheet"/>
+<link href="css/codeplayer.css" rel="stylesheet"/>
 </head>
 <body>
-<pre class="prettyprint" id="play">
-</pre>
+<div id="play">
+</div>
 
 <script src="js/prettify.js"></script>
 <script src="js/jquery.min.js"></script>
+<script src="js/URI.js"></script>
 <script src="js/codeplayer.js"></script>
 <script>
 jQuery(document).ready(function ($) {
-  var player = new CodePlayer("example", "#play");
+  var player = new CodePlayer("example/html-script", "#play");
   player.onFinish = function() {
       var restart = $("<p><input type='button' value='Restart'></p>").insertAfter($("#play"));
       restart.click(function() {
