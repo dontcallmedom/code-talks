@@ -9,8 +9,22 @@
 <body>
 <pre class="prettyprint" id="play">
 </pre>
+
 <script src="js/prettify.js"></script>
 <script src="js/jquery.min.js"></script>
-<script src="js/script.js"></script>
+<script src="js/codeplayer.js"></script>
+<script>
+jQuery(document).ready(function ($) {
+  var player = new CodePlayer("example", "#play");
+  player.onFinish = function() {
+      var restart = $("<p><input type='button' value='Restart'></p>").insertAfter($("#play"));
+      restart.click(function() {
+			player.restart();
+			restart.remove();
+		    });      
+  };
+  player.start();
+});
+</script>
 </body>
 </html>
