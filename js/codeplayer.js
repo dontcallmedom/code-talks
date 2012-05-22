@@ -3,19 +3,27 @@ function CodePlayer(url, selector, options) {
     this.lines = [];
     this.options = (options ? options : {});
     var self = this;
-    var currentStep = 0;
     var jQelement = $(selector);
-    var pauseAt = 0;
     var played, frozen, cursor, nextStep, displayMode, prevDisplayMode;
 
     function init () {
-	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for diret display
+	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
 	played = [""];
 	frozen = false;
 	cursor = { line:0,col:0};
 	nextStep = function() {};
 	this.onFinish = function() {};
-	this.onNext = manageHistory;
+	this.onStep = manageHistory;
+	window.addEventListener("popstate",
+				function (event) {
+				    var state = event.state;
+				    cursor = state.cursor;
+				    nextStep = function() {};
+				    played = state.played;
+				    setContent(state.played.join(""));
+				    prettyPrint();
+				    playLines(self.lines.slice(played.length - 1));
+				});
     };  
 
     this.start = function () {
@@ -81,35 +89,28 @@ function CodePlayer(url, selector, options) {
     }
 
     function pause(next) {
-	currentStep++;
-	if (displayMode == "type" || currentStep == pauseAt) {
+	if (displayMode == "type") {
 	    message("Press spacebar to continue");
             nextStep = next;
-	    if (currentStep == pauseAt && displayMode != prevDisplayMode) {
-		displayMode = prevDisplayMode;
-	    }
 	} else {
 	    next();
 	}
+	this.onStep();
     }
 
     function unpause() {
+	console.log(Date());
 	if (!frozen) {
 	    message("");
 	    nextStep();
-	    this.onNext();
 	}
     }
 
     function manageHistory() {
-	history.pushState({step:currentStep}, "Step " + currentStep, "#s" + currentStep);
-	window.addEventListener("popstate",
-				function (state) {
-				    pauseAt = state.step;
-				    prevDisplayMode = displayMode;
-				    displayMode = "show";
-				    self.restart();
-				});
+	var state = {played:played, cursor:cursor};
+	console.log("Setting state");
+	console.log(state);
+	history.pushState(state, "Step " + played.length, "#s" + played.length);
     }
 
     function setCursor(search, mode) {
@@ -118,9 +119,7 @@ function CodePlayer(url, selector, options) {
 	if (match === -1) {
 	    finishLine(next);
 	} else {
-	    console.log(match);
 	    var head = text.slice(0,match);
-	    console.log(head);
 	    // Calculate line
 	    cursor.line = head.split("\n").length - 1;
 	    // Calculate column if appending
@@ -131,8 +130,12 @@ function CodePlayer(url, selector, options) {
 		var queue = played.slice(cursor.line) ;
 		played = played.slice(0,cursor.line).concat("",queue) ;	       
 	    }
-	    console.log(cursor);
 	}	
+    }
+
+    function setContent(content) {
+	jQelement.html();
+	jQelement.text(content);	
     }
 
     function playLine(line, next) {
@@ -155,8 +158,7 @@ function CodePlayer(url, selector, options) {
 	    } else {
 		var newline = played[cursor.line].slice(0,cursor.col) +  line[0] + played[cursor.line].slice(cursor.col);
 		played[cursor.line] = newline;
-		jQelement.html();
-		jQelement.text(played.join(""));
+		setContent(played.join(""));
 		cursor.col++;
 		if (line.length > 1 ) {
 		    if (displayMode == "type") {
