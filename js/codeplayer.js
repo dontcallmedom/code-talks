@@ -4,7 +4,7 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var played, frozen, cursor, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer;
+    var played, frozen, offset, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -13,17 +13,17 @@ function CodePlayer(url, selector, options) {
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
 	played = [""];
 	frozen = false;
-	cursor = { line:0,col:0};
+	offset = 0;
 	nextStep = function() {};
 	this.onFinish = function() {};
 	this.onStep = manageHistory;
 	window.addEventListener("popstate",
 				function (event) {
 				    var state = event.state;
-				    cursor = state.cursor;
+				    offset = state.offset;
 				    nextStep = function() {};
 				    played = state.played;
-				    setCode(state.played.join(""));
+				    setCode(state.played.join("\n"));
 				    prettyPrint();
 				    playLines(self.lines.slice(played.length - 1));
 				});
@@ -67,7 +67,7 @@ function CodePlayer(url, selector, options) {
     };
 
     function playLines(lines) {
-	playLine(lines[0]+"\n",
+	playLine(lines[0],
 		 function () {
 		     if (lines.length > 1) {
 			 playLines(lines.slice(1));
@@ -80,8 +80,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function finishLine(next) {
-        cursor.line = played.length;
-	cursor.col=0;
+	offset = played.join("\n").length;
 	played.push("");
 	prettyPrint();	 
 	next();
@@ -109,28 +108,27 @@ function CodePlayer(url, selector, options) {
     }
 
     function manageHistory() {
-	var state = {played:played, cursor:cursor};
+	var state = {played:played, offset:offset};
 	console.log("Setting state");
 	console.log(state);
 	history.pushState(state, "Step " + played.length, "#s" + played.length);
     }
 
-    function setCursor(search, mode) {
-	var text = played.join("");
+    function setOffset(search, mode) {
+	var text = played.join("\n");
 	var match = text.indexOf(search);
 	if (match === -1) {
 	    finishLine(next);
 	} else {
 	    var head = text.slice(0,match);
-	    // Calculate line
-	    cursor.line = head.split("\n").length - 1;
-	    // Calculate column if appending
-	    if (mode == "a") {
-		cursor.col = match - head.lastIndexOf("\n") + search.length - 1;
-	    } else if (mode == "i") {
-		cursor.col = 0;
-		var queue = played.slice(cursor.line) ;
-		played = played.slice(0,cursor.line).concat("",queue) ;	       
+	    if (mode == "a") { // appending
+		offset = match + search.length ;
+	    } else if (mode == "i") { // inserting
+		offset = head.lastIndexOf("\n") ;
+		offset = (offset >0 ? offset : 0);
+		var line = head.split("\n").length - 1;
+		var queue = played.slice(line) ;
+		played = played.slice(0,line).concat("",queue) ;	       
 	    }
 	}	
     }
@@ -138,6 +136,24 @@ function CodePlayer(url, selector, options) {
     function setCode(code) {
 	codeContainer.html();
 	codeContainer.text(code);	
+    }
+
+    function playCharacter(line, next) {
+	var character = line[0];
+	var text = codeContainer.text();
+	text = text.slice(0,offset) + character + text.slice(offset);
+	played = text.split("\n");
+	codeContainer.text(text);
+	offset++;	
+	if (line.length > 1 ) {
+	    if (displayMode == "type") {
+		setTimeout(function() { playCharacter(line.slice(1), next);}, 10);	
+	    } else {
+		playCharacter(line.slice(1), next);
+	    }
+	} else {
+	    finishLine(next);
+	}
     }
 
     function playLine(line, next) {
@@ -149,7 +165,7 @@ function CodePlayer(url, selector, options) {
 		    var comp = line.slice(2).split("§");
 		    line = comp.slice(1).join("§");
 		    var search = comp[0];
-		    setCursor(search, command);
+		    setOffset(search, command);
 		    // remove extraneous "\n"
 		    if (command == "a") 
 			line = line.slice(0,-1);
@@ -170,21 +186,10 @@ function CodePlayer(url, selector, options) {
 		}
 		setTimeout(function() {finishLine(next);}, 400);
 	    } else {
-		jQelement.removeClass("flip");		    
-		var newline = played[cursor.line].slice(0,cursor.col) +  line[0] + played[cursor.line].slice(cursor.col);
-		played[cursor.line] = newline;
-		setCode(played.join(""));
-		cursor.col++;
-		if (line.length > 1 ) {
-		    if (displayMode == "type") {
-			setTimeout(function() { playLine(line.slice(1), next);}, 10);	
-		    } else {
-			playLine(line.slice(1), next);
-		    }
-
-		} else {
-		    finishLine(next);
-		}
+		jQelement.removeClass("flip");
+		// Reinit code shown
+		setCode(played.join("\n"));
+		playCharacter(line,next);
 	    }
 	}
     }
