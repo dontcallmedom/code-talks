@@ -17,7 +17,7 @@ function CodePlayer(url, selector, options) {
 	started = false;
 	offset = 0;
 	currentLine = 0;
-	insert = {};
+	insert = {content:""};
 	nextStep = function() {};
 	this.onFinish = function() {};
 	this.onStep = manageHistory;
@@ -151,21 +151,20 @@ function CodePlayer(url, selector, options) {
 	history.pushState(state, "Step " + currentLine, "#s" + currentLine);
     }
 
-    function calculatePosition(search, mode) {
-	var pos;
+    function calculatePosition(search, before) {
+	if (!before) {
+	    before = false;
+	}
 	var match = displayed.indexOf(search);
 	if (match === -1) {
-	    finishLine(next);
+	    return -1;
 	} else {
-	    if (mode == "a" || mode =="r") { // finding the end
-		pos = match + search.length;
-	    } else if (mode == "i") { // finding the beginning
-		var head = displayed.slice(0,match);
-		pos = head.lastIndexOf("\n");
-		pos = (pos > 0 ? pos + 1: 0);
+	    if (before) {
+		return match;
+	    } else {
+		return match + search.length;
 	    }
 	}
-	return pos;
     }
 
     function setCode(code) {
@@ -238,31 +237,38 @@ function CodePlayer(url, selector, options) {
 	if (line.length > 0) {
 	    if (line[0] == '#') {
 		command = line[1];
-		if (command == "a" || command == "i" || command == "r") {
-		    var comp = line.slice(2).split("§");
-		    line = comp.slice(1).join("§");
-		    var search = comp[0];
-		    offset = calculatePosition(search, command);
-		    if (command == "r") {
-			offsetErase = calculatePosition(line, command) - line.length - 1;
+		if (command == "a" || command == "b" || command == "r") {
+		    var search = line.slice(2).split("→")[0];
+		    var pos = calculatePosition(search, (command == "b"));
+		    if (offset == -1) {
+			finishLine(next);
+		    } else {
+			offset = pos;
 		    }
+		    if (command == "r") {
+			var until = line.slice(2).split("→").slice(1).join("→");
+			offsetErase = calculatePosition(until, true);
+		    }
+		} else if (command == "$") {
+		    offset = displayed.length;
+		} else if (command == "^") {
+		    offset = 0;
 		}
 		if (command == "#") {
 		    command = "";
 		    line = line.slice(1);
 		}
 	    }
-	    if (command == "i" || command == "") {
+	    if (command == "") {
 		line += "\n";
 	    }
-	    if (command == "a" || command =="i") {
+	    if (command == "a" || command =="b" || command == "$" || command == "^") {
 		insert.offset = offset;
-		insert.content = line;
+	    } else if (command == "r" || command == "@") {
+		insert = {content:""};
 	    } else if (command == "") {
 		if (insert.content)
-		    insert.content += line;
-	    } else {
-		insert = {};		
+		    insert.content += line;		
 	    }
 	    if (command == "p") {
 		pause(next);
@@ -271,23 +277,15 @@ function CodePlayer(url, selector, options) {
 		if (line.length > 2) {
 		    showInclude(line.slice(2), next);
 		}
-	    } else if (command == "$") {
-		// #$ move to end of file
-		offset = displayed.length;
-		finishLine(next);
-	    } else if (command == "^") {
-		// #^ move to end of file
-		offset = 0;
+	    } else if (command == "r") {
+		eraseCharacter(next);
+	    } else if (command != "") {
 		finishLine(next);
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
 		setCode(displayed);
-		if (command != "r") {
-		    playCharacter(line,next);		    
-		} else {
-		    eraseCharacter(next);
-		}
+		playCharacter(line,next);		    
 	    }
 	} else { // empty line
 	    playCharacter("\n",next);

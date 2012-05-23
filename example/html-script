@@ -7,12 +7,17 @@
 </body>
 </html>
 #p
-#i<html>§<!doctype html>
+#^
+<!doctype html>
 <!-- Now we are *truly* using HTML5! -->
 #p
-#rhtml>§<html>
-#i<title>§<meta charset=utf-8>
+#rhtml>→<html>
+#b<title>
+<meta charset=utf-8>
 #p
-#i</head>§<meta name="viewport">
+#b</head>
+
+<meta name="viewport">
 #p
-#a<html§ manifest="cache.manifest"
+#a<html
+ manifest="cache.manifest"
