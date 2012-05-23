@@ -4,7 +4,7 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started, beyondFirstStep;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -14,6 +14,7 @@ function CodePlayer(url, selector, options) {
 	displayed = "";
 	frozen = false;
 	paused = false;
+	beyondFIrstStep = false;
 	started = false;
 	offset = 0;
 	currentLine = 0;
@@ -109,11 +110,13 @@ function CodePlayer(url, selector, options) {
     function finishLine(next) {
 	if (insert.offset != null) {
 	    console.log("Insert detected", insert);
-	    var text = codeContainer.text();
-	    codeContainer.text(text.slice(0,insert.offset));
-	    codeContainer.append($("<strong></strong>").text(insert.content));
-	    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
-	    codeContainer.append(tmp);
+	    if (beyondFirstStep) {
+		var text = codeContainer.text();
+		codeContainer.text(text.slice(0,insert.offset));
+		codeContainer.append($("<strong></strong>").text(insert.content));
+		var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
+		codeContainer.append(tmp);
+	    }
 	}
 	currentLine++;
 	prettyPrint();
@@ -125,6 +128,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function pause(next) {
+	beyondFirstStep = true;
 	paused = true;
 	//insertCharacter("▮",offset);
 	if (displayMode == "type") {
@@ -249,7 +253,7 @@ function CodePlayer(url, selector, options) {
 			offsetErase = calculatePosition(until, true);
 		    }
 		} else if (command == "$") {
-		    offset = displayed.length;
+		    offset = displayed.length + 1;
 		} else if (command == "^") {
 		    offset = 0;
 		}
@@ -266,6 +270,9 @@ function CodePlayer(url, selector, options) {
 	    } else if (command == "r" || command == "@" || command == "p") {
 		insert = {content:""};
 	    } else if (command == "") {
+		if (insert.offset == null) {
+		    insert.offset = offset;
+		}
 		insert.content += line;		
 	    }
 	    if (command == "p") {
