@@ -37,15 +37,17 @@ function CodePlayer(url, selector, options) {
 	window.addEventListener(
 	    "keydown",
 	    function(event) {
+		console.log(event);
 		var key;
 		if (window.event)
 		    key = window.event.keyCode;
 		else if (event.which)
-		key = event.which;
+ 		    key = event.which;
 		if (key == 32) {
 		    unpause();
 		}
 	    });
+	//jQelement.click(unpause);
 	$.ajax(
 	    {
 		url: self.url, dataType:'text', 
@@ -181,7 +183,11 @@ function CodePlayer(url, selector, options) {
 		    iframe.attr("height",codeContainer.get(0).clientHeight);
 		    jQelement.addClass("flip");		    
 		}
-		setTimeout(function() {finishLine(next);}, 400);
+		var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
+							     function () {
+								 finishLine(next);
+								 jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
+							     });
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
