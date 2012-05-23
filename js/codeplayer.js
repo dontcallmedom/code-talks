@@ -29,7 +29,7 @@ function CodePlayer(url, selector, options) {
 					displayed = state.displayed;
 					setCode(displayed);
 					prettyPrint();
-					playLines(self.lines.slice(currentLine));					
+					playLines(self.lines.slice(currentLine));	
 				    }
 				});
     };  
@@ -127,19 +127,21 @@ function CodePlayer(url, selector, options) {
 	history.pushState(state, "Step " + currentLine, "#s" + currentLine);
     }
 
-    function setOffset(search, mode) {
+    function calculatePosition(search, mode) {
+	var pos;
 	var match = displayed.indexOf(search);
 	if (match === -1) {
 	    finishLine(next);
 	} else {
 	    if (mode == "a") { // appending
-		offset = match + search.length;
+		pos = match + search.length;
 	    } else if (mode == "i") { // inserting
 		var head = displayed.slice(0,match);
-		offset = head.lastIndexOf("\n");
-		offset = (offset > 0 ? offset + 1: 0);
+		pos = head.lastIndexOf("\n");
+		pos = (pos > 0 ? pos + 1: 0);
 	    }
-	}	
+	}
+	return pos;
     }
 
     function setCode(code) {
@@ -173,7 +175,7 @@ function CodePlayer(url, selector, options) {
 		    var comp = line.slice(2).split("§");
 		    line = comp.slice(1).join("§");
 		    var search = comp[0];
-		    setOffset(search, command);
+		    offset = calculatePosition(search, command);
 		}
 	    }
 	    if (command == "i" || command == "") {
