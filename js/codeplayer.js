@@ -4,7 +4,7 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -14,6 +14,7 @@ function CodePlayer(url, selector, options) {
 	displayed = "";
 	frozen = false;
 	paused = false;
+	started = false;
 	offset = 0;
 	currentLine = 0;
 	insert = {};
@@ -53,8 +54,8 @@ function CodePlayer(url, selector, options) {
 	$.ajax(
 	    {
 		url: self.url, dataType:'text', 
-		success:function(data) {self.lines = data.split("\n");  playLines(self.lines);},
-		error: function(err) { console.log(error);}}
+		success:function(data) {self.lines = data.split("\n");  playLines(self.lines); started = true;},
+		error: function(err) { console.log(err);}}
 	);
 	jQelement.after("<p id='instr'></p>");
     };
@@ -65,18 +66,29 @@ function CodePlayer(url, selector, options) {
 	playLines(this.lines);
     };
 
+    this.show = function() {
+	codeContainer.show();	
+    };
+
+    this.hide = function() {
+	codeContainer.hide();	
+    };
+
     this.freeze = function() {
 	frozen = true;
     };
 
     this.unfreeze = function() {
 	frozen = false;
+	if (!started) {
+	    self.start();
+	}
     };
 
     function finish() {
 	message("Finished!");
 	self.freeze();
-	self.onFinish();			 	
+	//self.onFinish();			 	
     }
 
     function playLines(lines) {
@@ -234,6 +246,10 @@ function CodePlayer(url, selector, options) {
 		    if (command == "r") {
 			offsetErase = calculatePosition(line, command) - line.length - 1;
 		    }
+		}
+		if (command == "#") {
+		    command = "";
+		    line = line.slice(1);
 		}
 	    }
 	    if (command == "i" || command == "") {
