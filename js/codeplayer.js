@@ -251,6 +251,8 @@ function CodePlayer(url, selector, options) {
 		offset = displayed.length;
 	    } else if (command == "^") {
 		offset = 0;
+	    } else if (command == "-") {
+		offset = displayed.slice(0,offset - 1).lastIndexOf("\n") - 1;
 	    }
 	    if (command == "#") {
 		command = "";
@@ -260,11 +262,14 @@ function CodePlayer(url, selector, options) {
 	if (command == "") {
 	    line += "\n";
 	}
-	if (command == "a" || command =="b" || command == "$" || command == "^") {
+	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
 	    insert.offset = offset;
 	} else if (command == "r" || command == "@" || command == "p") {
-	    insert = {content:""};
+	    insert.content = "";
 	} else if (command == "") {
+	    if (insert.content == "") {
+		insert.offset = offset;
+	    }
 	    insert.content += line;		
 	}
 	if (command == "p") {
