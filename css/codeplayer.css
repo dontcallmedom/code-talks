@@ -49,6 +49,10 @@ font-size:3em;
  -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
 }
 
+.prettyprint span:hover {
+  font-weight:bold;
+}
+
 .codeplayer.flip .front {
     z-index: 900;
     -webkit-transform: rotateY(180deg);
