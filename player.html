@@ -7,7 +7,9 @@
 <link href="css/codeplayer.css" rel="stylesheet"/>
 </head>
 <body>
+<input class="playerselector" type="button" value="index.html" data-script="example/html-script"><input  class="playerselector" type="button" value="cache.manifest" data-script="example/cache-script"><input   class="playerselector" type="button" value="script.js" data-script="example/js-script">
 <div id="play">
+
 </div>
 
 <script src="js/prettify.js"></script>
@@ -16,15 +18,20 @@
 <script src="js/codeplayer.js"></script>
 <script>
 jQuery(document).ready(function ($) {
-  var player = new CodePlayer("example/html-script", "#play");
-  player.onFinish = function() {
-      var restart = $("<p><input type='button' value='Restart'></p>").insertAfter($("#play"));
-      restart.click(function() {
-			player.restart();
-			restart.remove();
-		    });      
-  };
-  player.start();
+  var players = {};
+  var currentPlayer = null;
+  $("input.playerselector").each(function() {
+    players[$(this).val()] = new CodePlayer($(this).attr("data-script"), "#play");
+  });
+  $("input.playerselector").click(function() {
+    if (currentPlayer) {
+       currentPlayer.freeze();
+       currentPlayer.hide();
+    }
+    players[$(this).val()].unfreeze();
+    players[$(this).val()].show();
+    currentPlayer = players[$(this).val()];
+  });
 });
 </script>
 </body>
