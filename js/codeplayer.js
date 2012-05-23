@@ -258,7 +258,7 @@ function CodePlayer(url, selector, options) {
 	    } else if (command == "^") {
 		offset = 0;
 	    } else if (command == "-") {
-		offset = Math.max(displayed.slice(0,offset).lastIndexOf("\n") - 1, 0);
+		offset = Math.max(displayed.slice(0,displayed.slice(0,offset).lastIndexOf("\n")).lastIndexOf("\n") + 1, 0);
 	    }
 	    if (command == "#") {
 		command = "";
