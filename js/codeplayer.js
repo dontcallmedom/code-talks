@@ -4,7 +4,7 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -16,6 +16,7 @@ function CodePlayer(url, selector, options) {
 	paused = false;
 	offset = 0;
 	currentLine = 0;
+	insert = {};
 	nextStep = function() {};
 	this.onFinish = function() {};
 	this.onStep = manageHistory;
@@ -94,6 +95,15 @@ function CodePlayer(url, selector, options) {
     }
 
     function finishLine(next) {
+	if (insert.offset != null) {
+	    console.log("Insert detected", insert);
+	    var text = codeContainer.text();
+	    codeContainer.text(text.slice(0,insert.offset));
+	    codeContainer.append($("<strong></strong>").text(insert.content));
+	    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length + 1));
+	    codeContainer.append(tmp);
+	    console.log(codeContainer.html()); 
+	}
 	currentLine++;
 	prettyPrint();	 
 	next();
@@ -105,6 +115,7 @@ function CodePlayer(url, selector, options) {
 
     function pause(next) {
 	paused = true;
+	//insertCharacter("▮",offset);
 	if (displayMode == "type") {
 	    message("Press spacebar to continue");
             nextStep = next;
@@ -116,6 +127,7 @@ function CodePlayer(url, selector, options) {
 
     function unpause() {
 	if (!frozen && paused) {
+	    //removeCharacter(offset);
 	    paused = false;
 	    message("");
 	    nextStep();
@@ -157,11 +169,21 @@ function CodePlayer(url, selector, options) {
 	    }
     }
 
+    function insertCharacter(character, pos) {
+	var text = codeContainer.text();
+	displayed = text.slice(0,pos) + character + text.slice(pos);
+	codeContainer.text(displayed);	
+    }
+
+    function removeCharacter(pos) {
+	var text = codeContainer.text();
+	displayed = text.slice(0,pos - 1) + text.slice(pos);
+	codeContainer.text(displayed);
+    }
+
     function playCharacter(line, next) {
 	var character = line[0];
-	var text = codeContainer.text();
-	displayed = text.slice(0,offset) + character + text.slice(offset);
-	codeContainer.text(displayed);
+	insertCharacter(character, offset);
 	offset++;
 	if (line.length > 1 ) {
 	    execute(function()  { playCharacter(line.slice(1), next);} );
@@ -170,16 +192,29 @@ function CodePlayer(url, selector, options) {
 	}
     }
 
-    function removeCharacter(next) {
+    function eraseCharacter(next) {
 	if (offsetErase > offset) {
-	    var text = codeContainer.text();
-	    displayed = text.slice(0,offsetErase - 1) + text.slice(offsetErase);
-	    codeContainer.text(displayed);
+	    removeCharacter(offsetErase);
 	    offsetErase --;
-	    execute(function() { removeCharacter(next);});	    
+	    execute(function() { eraseCharacter(next);});	    
 	} else {
 	    finishLine(next);
 	}
+    }
+
+    function showInclude(url) {
+	var iframe = $("<iframe width='100%'></iframe>");
+	var relUrl = new URI(url);
+	iframe.attr("src",relUrl.resolve(self.url));
+	slideContainer.html();
+	slideContainer.append(iframe);
+	iframe.attr("height",codeContainer.get(0).clientHeight);
+	jQelement.addClass("flip");		    	
+	var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
+				function () {
+				    finishLine(next);
+				    jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
+				});	
     }
 
     function playLine(line, next) {
@@ -197,6 +232,15 @@ function CodePlayer(url, selector, options) {
 		    }
 		}
 	    }
+	    if (command == "a" || command =="i") {
+		insert.offset = offset;
+		insert.content = line;
+	    } else if (command == "") {
+		if (insert.content)
+		    insert.content += "\n" + line;
+	    } else {
+		insert = {};		
+	    }
 	    if (command == "i" || command == "") {
 		line += "\n";
 	    }
@@ -205,19 +249,8 @@ function CodePlayer(url, selector, options) {
 	    } else if (command == "@") {
 		// #@foo means show "foo" in an iframe in slideContainer
 		if (line.length > 2) {
-		    var iframe = $("<iframe width='100%'></iframe>");
-		    var relUrl = new URI(line.slice(2));
-		    iframe.attr("src",relUrl.resolve(self.url));
-		    slideContainer.html();
-		    slideContainer.append(iframe);
-		    iframe.attr("height",codeContainer.get(0).clientHeight);
-		    jQelement.addClass("flip");		    
+		    showInclude(line.slice(2));
 		}
-		var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
-							     function () {
-								 finishLine(next);
-								 jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
-							     });
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
@@ -225,7 +258,7 @@ function CodePlayer(url, selector, options) {
 		if (command != "r") {
 		    playCharacter(line,next);		    
 		} else {
-		    removeCharacter(next);
+		    eraseCharacter(next);
 		}
 	    }
 	}
