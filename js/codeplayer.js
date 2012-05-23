@@ -4,17 +4,18 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started, beyondFirstStep;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started, beyondFirstStep, nopause;
 
     function init () {
 	jQelement.addClass("codeplayer");
 	codeContainer = $("<pre class='front prettyprint'></pre>").appendTo(jQelement);
 	slideContainer = $("<div class='back'></div>").appendTo(jQelement);
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
+	nopause = (nopause ? nopause : (self.options["nopause"]==true));
 	displayed = "";
 	frozen = false;
 	paused = false;
-	beyondFIrstStep = false;
+	beyondFirstStep = false;
 	started = false;
 	offset = 0;
 	currentLine = 0;
@@ -109,7 +110,6 @@ function CodePlayer(url, selector, options) {
 
     function finishLine(next) {
 	if (insert.offset != null) {
-	    console.log("Insert detected", insert);
 	    if (beyondFirstStep) {
 		var text = codeContainer.text();
 		codeContainer.text(text.slice(0,insert.offset));
@@ -130,8 +130,7 @@ function CodePlayer(url, selector, options) {
     function pause(next) {
 	beyondFirstStep = true;
 	paused = true;
-	//insertCharacter("▮",offset);
-	if (displayMode == "type") {
+	if (!nopause) {
 	    message("Press spacebar to continue");
             nextStep = next;
 	} else {
