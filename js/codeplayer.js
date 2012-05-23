@@ -50,6 +50,7 @@ function CodePlayer(url, selector, options) {
  		    key = event.which;
 		if (key == 32) {
 		    unpause();
+		    event.preventDefault();
 		}
 	    });
 	//jQelement.click(unpause);
@@ -113,7 +114,9 @@ function CodePlayer(url, selector, options) {
 	    if (beyondFirstStep) {
 		var text = codeContainer.text();
 		codeContainer.text(text.slice(0,insert.offset));
-		codeContainer.append($("<strong></strong>").text(insert.content));
+		if (insert.content.length) {
+		    codeContainer.append($("<strong></strong>").text(insert.content));		    
+		}
 		var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
 		codeContainer.append(tmp);
 	    }
