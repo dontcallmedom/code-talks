@@ -4,16 +4,17 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var played, frozen, offset, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer;
+    var displayed, frozen, offset, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine;
 
     function init () {
 	jQelement.addClass("codeplayer");
 	codeContainer = $("<pre class='front prettyprint'></pre>").appendTo(jQelement);
 	slideContainer = $("<div class='back'></div>").appendTo(jQelement);
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
-	played = [""];
+	displayed = "";
 	frozen = false;
 	offset = 0;
+	currentLine = 0;
 	nextStep = function() {};
 	this.onFinish = function() {};
 	this.onStep = manageHistory;
@@ -21,11 +22,12 @@ function CodePlayer(url, selector, options) {
 				function (event) {
 				    var state = event.state;
 				    offset = state.offset;
+				    currentLine = state.currentLine;
 				    nextStep = function() {};
-				    played = state.played;
-				    setCode(state.played.join("\n"));
+				    displayed = state.displayed;
+				    setCode(displayed);
 				    prettyPrint();
-				    playLines(self.lines.slice(played.length - 1));
+				    playLines(self.lines.slice(currentLine));
 				});
     };  
 
@@ -80,8 +82,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function finishLine(next) {
-	offset = played.join("\n").length;
-	played.push("");
+	currentLine++;
 	prettyPrint();	 
 	next();
     }
@@ -108,27 +109,21 @@ function CodePlayer(url, selector, options) {
     }
 
     function manageHistory() {
-	var state = {played:played, offset:offset};
-	console.log("Setting state");
-	console.log(state);
-	history.pushState(state, "Step " + played.length, "#s" + played.length);
+	var state = {displayed:displayed, offset:offset, currentLine:currentLine};
+	history.pushState(state, "Step " + currentLine, "#s" + currentLine);
     }
 
     function setOffset(search, mode) {
-	var text = played.join("\n");
-	var match = text.indexOf(search);
+	var match = displayed.indexOf(search);
 	if (match === -1) {
 	    finishLine(next);
 	} else {
-	    var head = text.slice(0,match);
+	    var head = displayed.slice(0,match);
 	    if (mode == "a") { // appending
 		offset = match + search.length;
 	    } else if (mode == "i") { // inserting
 		offset = head.lastIndexOf("\n");
-		offset = (offset >0 ? offset : 0);
-		var line = head.split("\n").length - 1;
-		var queue = played.slice(line);
-		played = played.slice(0,line).concat("",queue); 
+		offset = (offset > 0 ? offset : 0);
 	    }
 	}	
     }
@@ -141,9 +136,8 @@ function CodePlayer(url, selector, options) {
     function playCharacter(line, next) {
 	var character = line[0];
 	var text = codeContainer.text();
-	text = text.slice(0,offset) + character + text.slice(offset);
-	played = text.split("\n");
-	codeContainer.text(text);
+	displayed = text.slice(0,offset) + character + text.slice(offset);
+	codeContainer.text(displayed);
 	offset++;	
 	if (line.length > 1 ) {
 	    if (displayMode == "type") {
@@ -188,7 +182,7 @@ function CodePlayer(url, selector, options) {
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
-		setCode(played.join("\n"));
+		setCode(displayed);
 		playCharacter(line,next);
 	    }
 	}
