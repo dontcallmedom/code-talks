@@ -1,0 +1,9 @@
+CACHE MANIFEST
+#p
+## Files to be cached
+CACHE: # this is optional
+#p
+NETWORK:
+*
+FALLBACK:
+offline.html
