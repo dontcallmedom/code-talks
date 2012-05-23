@@ -11,7 +11,7 @@ body {
 .codeplayer {
 position:relative;
 width: 100%;
-font-size:3em;
+font-size:2em;
 -webkit-perspective: 600px;
 -moz-perspective: 600px;
 -o-perspective: 600px;
@@ -47,6 +47,11 @@ font-size:3em;
  -moz-transform: rotateY(0deg);
  -moz-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
  -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
+}
+
+.prettyprint strong {
+  font-size:1.5em;
+  text-shadow: black 1px 1px;
 }
 
 .prettyprint span:hover {
