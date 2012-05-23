@@ -256,7 +256,7 @@ function CodePlayer(url, selector, options) {
 	    } else if (command == "^") {
 		offset = 0;
 	    } else if (command == "-") {
-		offset = displayed.slice(0,offset - 1).lastIndexOf("\n") - 1;
+		offset = Math.max(displayed.slice(0,offset).lastIndexOf("\n") - 1, 0);;
 	    }
 	    if (command == "#") {
 		command = "";
