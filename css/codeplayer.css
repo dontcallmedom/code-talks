@@ -21,6 +21,11 @@ font-size:2em;
 .codeplayer pre {
   white-space: pre-wrap;
   background:#fff;
+  padding-bottom:10em;
+}
+
+.codeplayer pre :focus {
+ outline:0;
 }
 
 .codeplayer .front, .codeplayer .back {
