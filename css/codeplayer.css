@@ -10,7 +10,7 @@ body {
 
 .codeplayer {
 position:relative;
-width: 750px;
+width: 100%;
 font-size:3em;
 -webkit-perspective: 600px;
 -moz-perspective: 600px;
@@ -20,11 +20,11 @@ font-size:3em;
 
 .codeplayer pre {
   white-space: pre-wrap;
-  margin:0;
   background:#fff;
 }
 
 .codeplayer .front, .codeplayer .back {
+  margin:0;
  position:absolute;
  top:0;
  left:0;
