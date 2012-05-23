@@ -281,6 +281,8 @@ function CodePlayer(url, selector, options) {
 		    eraseCharacter(next);
 		}
 	    }
+	} else { // empty line
+	    playCharacter("\n",next);
 	}
     }
 
