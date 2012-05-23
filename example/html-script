@@ -7,10 +7,10 @@
 </body>
 </html>
 #p
-#@include.html
-#p
 #i<html>§<!doctype html>
+<!-- Now we are *truly* using HTML5! -->
 #p
+#rhtml>§<html>
 #i<title>§<meta charset=utf-8>
 #p
 #i</head>§<meta name="viewport">
