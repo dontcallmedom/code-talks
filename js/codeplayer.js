@@ -122,13 +122,13 @@ function CodePlayer(url, selector, options) {
 	} else {
 	    var head = text.slice(0,match);
 	    if (mode == "a") { // appending
-		offset = match + search.length ;
+		offset = match + search.length;
 	    } else if (mode == "i") { // inserting
-		offset = head.lastIndexOf("\n") ;
+		offset = head.lastIndexOf("\n");
 		offset = (offset >0 ? offset : 0);
 		var line = head.split("\n").length - 1;
-		var queue = played.slice(line) ;
-		played = played.slice(0,line).concat("",queue) ;	       
+		var queue = played.slice(line);
+		played = played.slice(0,line).concat("",queue); 
 	    }
 	}	
     }
