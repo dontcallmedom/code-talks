@@ -275,6 +275,10 @@ function CodePlayer(url, selector, options) {
 		// #$ move to end of file
 		offset = displayed.length;
 		finishLine(next);
+	    } else if (command == "^") {
+		// #^ move to end of file
+		offset = 0;
+		finishLine(next);
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
