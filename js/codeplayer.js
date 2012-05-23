@@ -4,7 +4,7 @@ function CodePlayer(url, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine;
+    var displayed, frozen, offset, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -13,6 +13,7 @@ function CodePlayer(url, selector, options) {
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
 	displayed = "";
 	frozen = false;
+	paused = false;
 	offset = 0;
 	currentLine = 0;
 	nextStep = function() {};
@@ -92,6 +93,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function pause(next) {
+	paused = true;
 	if (displayMode == "type") {
 	    message("Press spacebar to continue");
             nextStep = next;
@@ -102,7 +104,8 @@ function CodePlayer(url, selector, options) {
     }
 
     function unpause() {
-	if (!frozen) {
+	if (!frozen && paused) {
+	    paused = false;
 	    message("");
 	    nextStep();
 	}
@@ -118,12 +121,12 @@ function CodePlayer(url, selector, options) {
 	if (match === -1) {
 	    finishLine(next);
 	} else {
-	    var head = displayed.slice(0,match);
 	    if (mode == "a") { // appending
 		offset = match + search.length;
 	    } else if (mode == "i") { // inserting
+		var head = displayed.slice(0,match);
 		offset = head.lastIndexOf("\n");
-		offset = (offset > 0 ? offset : 0);
+		offset = (offset > 0 ? offset + 1: 0);
 	    }
 	}	
     }
@@ -138,7 +141,7 @@ function CodePlayer(url, selector, options) {
 	var text = codeContainer.text();
 	displayed = text.slice(0,offset) + character + text.slice(offset);
 	codeContainer.text(displayed);
-	offset++;	
+	offset++;
 	if (line.length > 1 ) {
 	    if (displayMode == "type") {
 		setTimeout(function() { playCharacter(line.slice(1), next);}, 10);	
@@ -160,10 +163,10 @@ function CodePlayer(url, selector, options) {
 		    line = comp.slice(1).join("§");
 		    var search = comp[0];
 		    setOffset(search, command);
-		    // remove extraneous "\n"
-		    if (command == "a") 
-			line = line.slice(0,-1);
 		}
+	    }
+	    if (command == "i" || command == "") {
+		line += "\n";
 	    }
 	    if (command == "p") {
 		pause(next);
