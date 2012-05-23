@@ -218,7 +218,7 @@ function CodePlayer(url, selector, options) {
 	}
     }
 
-    function showInclude(url) {
+    function showInclude(url, next) {
 	var iframe = $("<iframe width='100%'></iframe>");
 	var relUrl = new URI(url);
 	iframe.attr("src",relUrl.resolve(self.url));
@@ -269,7 +269,7 @@ function CodePlayer(url, selector, options) {
 	    } else if (command == "@") {
 		// #@foo means show "foo" in an iframe in slideContainer
 		if (line.length > 2) {
-		    showInclude(line.slice(2));
+		    showInclude(line.slice(2), next);
 		}
 	    } else {
 		jQelement.removeClass("flip");
