@@ -161,9 +161,12 @@ function CodePlayer(url, selector, options) {
 	codeContainer.text(code);	
     }
 
-    function execute(fn) {
+    function execute(fn, timeout) {
+	if (!timeout) {
+	    timeout = 10;
+	}
 	if (displayMode == "type") {
-	    setTimeout(fn, 10);	
+	    setTimeout(fn, timeout);	
 	    } else {
 		fn();
 	    }
@@ -196,7 +199,8 @@ function CodePlayer(url, selector, options) {
 	if (offsetErase > offset) {
 	    removeCharacter(offsetErase);
 	    offsetErase --;
-	    execute(function() { eraseCharacter(next);});	    
+	    execute(function() { eraseCharacter(next);}, 2);	    
+	    //eraseCharacter(next);
 	} else {
 	    finishLine(next);
 	}
