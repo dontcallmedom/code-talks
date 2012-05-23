@@ -9,6 +9,8 @@ That script uses the following syntax:
 * the actual code to be inserted is the one that appears after the "§"
 * #r allows to remove the code present between two pieces of code; the two pieces are the first match of the strings separated by "§"
 * #@ allows to show the content of an external resource (e.g. to give explanations); the url of the resource to be included needs to follow the @ sign, e.g. #@foo.html will include foo.html
+* #$ moves to end of file
+* #^ moves to start of file
 
 
 See it [in action on an example](http://dontcallmedom.github.com/code-talks/player.html).
