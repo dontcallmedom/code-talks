@@ -114,7 +114,6 @@ function CodePlayer(url, selector, options) {
 	    codeContainer.append($("<strong></strong>").text(insert.content));
 	    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
 	    codeContainer.append(tmp);
-	    console.log(codeContainer.html()); 
 	}
 	currentLine++;
 	prettyPrint();
@@ -264,11 +263,10 @@ function CodePlayer(url, selector, options) {
 	    }
 	    if (command == "a" || command =="b" || command == "$" || command == "^") {
 		insert.offset = offset;
-	    } else if (command == "r" || command == "@") {
+	    } else if (command == "r" || command == "@" || command == "p") {
 		insert = {content:""};
 	    } else if (command == "") {
-		if (insert.content)
-		    insert.content += line;		
+		insert.content += line;		
 	    }
 	    if (command == "p") {
 		pause(next);
