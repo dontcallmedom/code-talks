@@ -237,63 +237,61 @@ function CodePlayer(url, selector, options) {
 
     function playLine(line, next) {
 	var command = "";
-	if (line.length > 0) {
-	    if (line[0] == '#') {
-		command = line[1];
-		if (command == "a" || command == "b" || command == "r") {
-		    var search = line.slice(2).split("→")[0];
-		    var pos = calculatePosition(search, (command == "b"));
-		    if (offset == -1) {
-			finishLine(next);
-		    } else {
-			offset = pos;
-		    }
-		    if (command == "r") {
-			var until = line.slice(2).split("→").slice(1).join("→");
-			offsetErase = calculatePosition(until, true);
-		    }
-		} else if (command == "$") {
-		    offset = displayed.length + 1;
-		} else if (command == "^") {
-		    offset = 0;
+	if (line.length > 0 && line[0] == '#') {
+	    command = line[1];
+	    if (command == "a" || command == "b" || command == "r") {
+		var search = line.slice(2).split("→")[0];
+		var pos = calculatePosition(search, (command == "b"));
+		if (offset == -1) {
+		    finishLine(next);
+		} else {
+		    offset = pos;
 		}
-		if (command == "#") {
-		    command = "";
-		    line = line.slice(1);
+		if (command == "r") {
+		    var until = line.slice(2).split("→").slice(1).join("→");
+		    offsetErase = calculatePosition(until, true);
 		}
+	    } else if (command == "$") {
+		offset = displayed.length;
+	    } else if (command == "^") {
+		offset = 0;
+	    } else if (command == "-") {
+		offset = displayed.slice(0,offset - 1).lastIndexOf("\n") - 1;
 	    }
-	    if (command == "") {
-		line += "\n";
+	    if (command == "#") {
+		command = "";
+		line = line.slice(1);
 	    }
-	    if (command == "a" || command =="b" || command == "$" || command == "^") {
+	}
+	if (command == "") {
+	    line += "\n";
+	}
+	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
+	    insert.offset = offset;
+	} else if (command == "r" || command == "@" || command == "p") {
+	    insert.content = "";
+	} else if (command == "") {
+	    if (insert.content == "") {
 		insert.offset = offset;
-	    } else if (command == "r" || command == "@" || command == "p") {
-		insert = {content:""};
-	    } else if (command == "") {
-		if (insert.offset == null) {
-		    insert.offset = offset;
-		}
-		insert.content += line;		
 	    }
-	    if (command == "p") {
-		pause(next);
-	    } else if (command == "@") {
-		// #@foo means show "foo" in an iframe in slideContainer
-		if (line.length > 2) {
-		    showInclude(line.slice(2), next);
-		}
-	    } else if (command == "r") {
-		eraseCharacter(next);
-	    } else if (command != "") {
-		finishLine(next);
-	    } else {
-		jQelement.removeClass("flip");
-		// Reinit code shown
-		setCode(displayed);
-		playCharacter(line,next);		    
+	    insert.content += line;		
+	}
+	if (command == "p") {
+	    pause(next);
+	} else if (command == "@") {
+	    // #@foo means show "foo" in an iframe in slideContainer
+	    if (line.length > 2) {
+		showInclude(line.slice(2), next);
 	    }
-	} else { // empty line
-	    playCharacter("\n",next);
+	} else if (command == "r") {
+	    eraseCharacter(next);
+	} else if (command != "") {
+	    finishLine(next);
+	} else {
+	    jQelement.removeClass("flip");
+	    // Reinit code shown
+	    setCode(displayed);
+	    playCharacter(line,next);		    
 	}
     }
 
