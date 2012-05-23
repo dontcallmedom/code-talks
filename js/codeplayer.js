@@ -271,6 +271,10 @@ function CodePlayer(url, selector, options) {
 		if (line.length > 2) {
 		    showInclude(line.slice(2), next);
 		}
+	    } else if (command == "$") {
+		// #$ move to end of file
+		offset = displayed.length;
+		finishLine(next);
 	    } else {
 		jQelement.removeClass("flip");
 		// Reinit code shown
