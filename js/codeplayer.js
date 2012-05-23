@@ -100,12 +100,12 @@ function CodePlayer(url, selector, options) {
 	    var text = codeContainer.text();
 	    codeContainer.text(text.slice(0,insert.offset));
 	    codeContainer.append($("<strong></strong>").text(insert.content));
-	    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length + 1));
+	    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
 	    codeContainer.append(tmp);
 	    console.log(codeContainer.html()); 
 	}
 	currentLine++;
-	prettyPrint();	 
+	prettyPrint();
 	next();
     }
 
@@ -232,17 +232,17 @@ function CodePlayer(url, selector, options) {
 		    }
 		}
 	    }
+	    if (command == "i" || command == "") {
+		line += "\n";
+	    }
 	    if (command == "a" || command =="i") {
 		insert.offset = offset;
 		insert.content = line;
 	    } else if (command == "") {
 		if (insert.content)
-		    insert.content += "\n" + line;
+		    insert.content += line;
 	    } else {
 		insert = {};		
-	    }
-	    if (command == "i" || command == "") {
-		line += "\n";
 	    }
 	    if (command == "p") {
 		pause(next);
