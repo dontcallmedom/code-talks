@@ -22,13 +22,15 @@ function CodePlayer(url, selector, options) {
 	window.addEventListener("popstate",
 				function (event) {
 				    var state = event.state;
-				    offset = state.offset;
-				    currentLine = state.currentLine;
-				    nextStep = function() {};
-				    displayed = state.displayed;
-				    setCode(displayed);
-				    prettyPrint();
-				    playLines(self.lines.slice(currentLine));
+				    if (state) {
+					offset = state.offset;
+					currentLine = state.currentLine;
+					nextStep = function() {};
+					displayed = state.displayed;
+					setCode(displayed);
+					prettyPrint();
+					playLines(self.lines.slice(currentLine));					
+				    }
 				});
     };  
 
@@ -37,7 +39,6 @@ function CodePlayer(url, selector, options) {
 	window.addEventListener(
 	    "keydown",
 	    function(event) {
-		console.log(event);
 		var key;
 		if (window.event)
 		    key = window.event.keyCode;
@@ -71,17 +72,25 @@ function CodePlayer(url, selector, options) {
 	frozen = false;
     };
 
+    function finish() {
+	message("Finished!");
+	self.freeze();
+	self.onFinish();			 	
+    }
+
     function playLines(lines) {
-	playLine(lines[0],
-		 function () {
-		     if (lines.length > 1) {
-			 playLines(lines.slice(1));
-		     } else {
-			 message("Finished!");
-			 self.freeze();
-			 self.onFinish();			 
-		     }
-		 });
+	if (lines.length) {
+	    playLine(lines[0],
+		     function () {
+			 if (lines.length > 1) {
+			     playLines(lines.slice(1));
+			 } else {
+			     finish();
+			 }
+		     });
+	} else {
+	    finish();
+	}
     }
 
     function finishLine(next) {
