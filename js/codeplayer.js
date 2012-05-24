@@ -5,7 +5,7 @@ function CodePlayer(start, script, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause, command;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -34,7 +34,7 @@ function CodePlayer(start, script, selector, options) {
 					displayed = state.displayed;
 					setCode(displayed);
 					prettyPrint();
-					playLines(self.blocks.slice(currentBlock));	
+					playBlocks(self.blocks.slice(currentBlock));	
 				    }
 				});
     };  
@@ -64,7 +64,7 @@ function CodePlayer(start, script, selector, options) {
 		    $.ajax(
 			{
 			    url: self.script, dataType:'text', 
-			    success:function(data) {self.blocks = data.split(/^[0-9].*\n/);  playBlocks(self.blocks); started = true;},
+			    success:function(data) {self.blocks = data.split(/^([0-9].*\n)/).map(function(val,idx,array) { if (!(idx % 2)) { return array[idx] + array[idx+1];}});  playBlocks(self.blocks); started = true;},
 			    error: function(err) { console.log(err);}}
 		    );
 		},
@@ -104,12 +104,12 @@ function CodePlayer(start, script, selector, options) {
 	//self.onFinish();			 	
     }
 
-    function playLines(lines) {
-	if (lines.length) {
-	    playLine(lines[0],
+    function playBlocks(blocks) {
+	if (blocks.length) {
+	    playBlock(blocks[0],
 		     function () {
-			 if (lines.length > 1) {
-			     playLines(lines.slice(1));
+			 if (blocks.length > 1) {
+			     playBocks(blocks.slice(1));
 			 } else {
 			     finish();
 			 }
@@ -211,17 +211,19 @@ function CodePlayer(start, script, selector, options) {
     }
 
     function playCharacter(line, next) {
-	var character = line[0];
+	offset += line.indexOf("_");
+	var character = line[line.indexOf("_") + 1];
 	insertCharacter(character, offset);
-	offset++;
-	if (line.length > 1 ) {
-	    execute(function()  { playCharacter(line.slice(1), next);} );
+	if (line.split("_").length > 1 ) {
+	    execute(function()  { playCharacter(line.slice(line.indexOf("_")), next);} );
 	} else {
 	    finishLine(next);
 	}
     }
 
-    function eraseCharacter(next) {
+    function eraseCharacter(line, next) {
+	offsetErase = offset + line.lastIndexOf("_") + 1;
+	offset += line.indexOf("_") + 1;
 	if (offsetErase > offset) {
 	    removeCharacter(offsetErase);
 	    offsetErase --;
@@ -247,61 +249,33 @@ function CodePlayer(start, script, selector, options) {
 				});	
     }
 
-    function playLine(line, next) {
-	if (line.length > 0 && line[0] != '<' && line[0] != '>') {
-	    if (line[0] == "#" && line.length > 2) {
-		command = line[1];
-	    } else { // diff instructions
-		var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
-		var params = line.match(paramRegex).slice(1);
-		command = params[2];
-		if (command == "a" || command == "b" || command == "r") {
-		    var search = line.slice(2).split("→")[0];
-		    var pos = calculatePosition(search, (command == "b"));
-		    if (offset == -1) {
-			finishLine(next);
-		    } else {
-			offset = pos;
-		    }
-		    if (command == "r") {
-			var until = line.slice(2).split("→").slice(1).join("→");
-			offsetErase = calculatePosition(until, true);
-		    }
+    function playBlock(block, next) {
+	command = block[0];
+	if (command == "#p") {
+	    pause(next);
+	} else {
+	    var diff = block.slice(1).split("\n");;
+	    // TODO input error management
+	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
+	    var params = command.match(paramRegex).slice(1);
+	    // 1,2a1 => params=[1,2,'a',1,null]
+	    var operation = params[2];
+	    offset = displayed.split("\n").slice(params[0]).join("\n").length;
+	    for (var i = 0 ; i<diff.length; i++) {
+		var diffline = diff[i];
+		if (operation == "a") {
+		    playCharacter(diffline, next);
+		} else if (operation == "d") {
+		    eraseCharacter(diffline, next);
+		} else if (operation == "c") {
+		    insertline = diff[i+2];
+		    eraseCharacter(diffline, 
+				    function () {
+					playCharacter(insertline, next);
+				    });
+		    break;
 		}
 	    }
-	} else if (line[0] == '>' || line[0] == '<') {
-		
-	}
-	if (command == "") {
-	    line += "\n";
-	}
-	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
-	    insert.offset = offset;
-	} else if (command == "r" || command == "@" || command == "p") {
-	    insert.content = "";
-	} else if (command == "") {
-	    if (insert.content == "") {
-		insert.offset = offset;
-	    }
-	    insert.content += line;		
-	}
-	if (command == "p") {
-	    pause(next);
-	} else if (command == "@") {
-	    // #@foo means show "foo" in an iframe in slideContainer
-	    if (line.length > 2) {
-		showInclude(line.slice(2), next);
-	    }
-	} else if (command == "r") {
-	    eraseCharacter(next);
-	} else if (command != "") {
-	    finishLine(next);
-	} else {
-	    jQelement.removeClass("flip");
-	    // Reinit code shown
-	    setCode(displayed);
-	    playCharacter(line,next);		    
 	}
     }
-
 };
