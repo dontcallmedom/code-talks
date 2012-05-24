@@ -207,7 +207,7 @@ function CodePlayer(startfile, script, selector, options) {
 
     function execute(fn, timeout) {
 	if (!timeout) {
-	    timeout = 10;
+	    timeout = 200;
 	}
 	if (displayMode == "type") {
 	    setTimeout(fn, timeout);	
@@ -225,13 +225,13 @@ function CodePlayer(startfile, script, selector, options) {
 
     function removeCharacter(pos) {
 	var text = codeContainer.text();
-	console.log("removing " + text[pos]);
-	displayed = text.slice(0,pos - 1) + text.slice(pos);
+	console.log("removing " + text[pos - 1]);
+	displayed = text.slice(0,pos -1) + text.slice(pos);
 	codeContainer.text(displayed);
     }
 
     function playCharacter(line, next) {
-	if (line) {
+	if (line && line.indexOf("_") >= 0) {
 	    console.log("line insert: " + line);
 	    offset += line.indexOf("_");
 	    var character = line[line.indexOf("_") + 2];
@@ -247,15 +247,17 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function eraseCharacter(line, next) {
-	if (line) {
-	    offsetErase = offset + line.lastIndexOf("_") + 2;
+	if (line && line.indexOf("_") >= 0) {
+	    offsetErase = offset + line.lastIndexOf("_") - (line.split("_").length - 2 ) *2 + 1;
+	    console.log(line.lastIndexOf("_"));
+	    console.log(line.split("_").length);
 	    console.log("offset erase: " + offsetErase);
 	    console.log("line: " + line);
 	    //offset += line.indexOf("_") + 1;
 	    if (offsetErase > offset) {
 		removeCharacter(offsetErase);
-		//execute(function() { eraseCharacter(next);}, 2);	    
-		eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
+		execute(function() { eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);});
+		//eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
 	    } else {
 		finishLine(next);
 	    }
