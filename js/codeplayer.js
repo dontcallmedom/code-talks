@@ -231,29 +231,39 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function playCharacter(line, next) {
-	offset += line.indexOf("_");
-	var character = line[line.indexOf("_") + 2];
-	insertCharacter(character, offset);
-	if (line.split("_").length > 1 ) {
-	    execute(function()  { playCharacter(line.slice(line.indexOf("_")), next);} );
+	if (line) {
+	    console.log("line insert: " + line);
+	    offset += line.indexOf("_");
+	    var character = line[line.indexOf("_") + 2];
+	    insertCharacter(character, offset);
+	    if (line.split("_").length > 1 ) {
+		execute(function()  { playCharacter(line.slice(line.indexOf("_") + 2), next);} );
+	    } else {
+		finishLine(next);
+	    }
 	} else {
 	    finishLine(next);
 	}
     }
 
     function eraseCharacter(line, next) {
-	offsetErase = offset + line.lastIndexOf("_") + 2;
-	console.log("offset erase: " + offsetErase);
-	offset += line.indexOf("_") + 1;
-	if (offsetErase > offset) {
-	    removeCharacter(offsetErase);
-	    offsetErase -=2-;
-	    //execute(function() { eraseCharacter(next);}, 2);	    
-	    eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
+	if (line) {
+	    offsetErase = offset + line.lastIndexOf("_") + 2;
+	    console.log("offset erase: " + offsetErase);
+	    console.log("line: " + line);
+	    //offset += line.indexOf("_") + 1;
+	    if (offsetErase > offset) {
+		removeCharacter(offsetErase);
+		//execute(function() { eraseCharacter(next);}, 2);	    
+		eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
+	    } else {
+		finishLine(next);
+	    }
 	} else {
 	    finishLine(next);
 	}
     }
+	
 
 
     function playCommand(block, next) {
