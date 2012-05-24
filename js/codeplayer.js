@@ -70,11 +70,10 @@ function CodePlayer(startfile, script, selector, options) {
 					self.blocks.push({command:line, diff:[]});
 				    } else if (line == "#p") {
 					self.blocks.push({command:line});
-				    } else {
+				    } else if (self.blocks[self.blocks.length - 1].diff) {
 					self.blocks[self.blocks.length - 1].diff.push(line);
 				    }
 				}
-				console.log(self.blocks);
 				displayed = startcontent;
 				codeContainer.text(startcontent);
 				prettyPrint();
@@ -84,7 +83,7 @@ function CodePlayer(startfile, script, selector, options) {
 			    error: function(err) { console.log(err);}}
 		    );
 		},
-		error: function(err) { console.log(err); console.log(self.start);}}
+		error: function(err) { console.log(err); console.log(self.startfile);}}
 	);
 	jQelement.after("<p id='instr'></p>");
     };
@@ -121,7 +120,6 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function playBlocks(blocks) {
-	console.log(blocks);
 	if (blocks.length) {
 	    playBlock(blocks[0],
 		     function () {
@@ -158,6 +156,7 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function pause(next) {
+	console.log(next);
 	beyondFirstStep = true;
 	paused = true;
 	if (!nopause) {
@@ -251,23 +250,25 @@ function CodePlayer(startfile, script, selector, options) {
 	}
     }
 
-    function showInclude(url, next) {
-	var iframe = $("<iframe width='100%'></iframe>");
-	var relUrl = new URI(url);
-	iframe.attr("src",relUrl.resolve(self.script));
-	slideContainer.html();
-	slideContainer.append(iframe);
-	iframe.attr("height",codeContainer.get(0).clientHeight);
-	jQelement.addClass("flip");		    	
-	var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
-				function () {
-				    finishLine(next);
-				    jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
-				});	
-    }
-
     function playBlock(blocks, next) {
 	var block = blocks[0];
+	console.log(blocks);
+	if (blocks.length) {
+	    playCommand(blocks[0],
+		     function () {
+			 if (blocks.length > 1) {
+			     playBock(blocks.slice(1));
+			 } else {
+			     finish();
+			 }
+		     });
+	} else {
+	    finish();
+	}
+    }
+
+
+    function playCommand(block, next) {
 	var command = block.command;
 	if (command == "#p") {
 	    pause(next);
@@ -276,6 +277,7 @@ function CodePlayer(startfile, script, selector, options) {
 	    // TODO input error management
 	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
 	    var params = command.match(paramRegex).slice(1);
+	    console.log(params);
 	    // 1,2a1 => params=[1,2,'a',1,null]
 	    var operation = params[2];
 	    offset = displayed.split("\n").slice(params[0]).join("\n").length;
