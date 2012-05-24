@@ -1,5 +1,5 @@
-function CodePlayer(start, script, selector, options) {
-    this.start = start;    
+function CodePlayer(startfile, script, selector, options) {
+    this.startfile = startfile;
     this.script = new URI(script);
     this.blocks = [];
     this.options = (options ? options : {});
@@ -56,19 +56,35 @@ function CodePlayer(start, script, selector, options) {
 	    });
 	//jQelement.click(unpause);
 	$.ajax(
-	    {   url: self.start, dataType:'text',
-		success:function(data) {
-		    displayed = data;
-		    codeContainer.text(data);
-		    prettyPrint();
+	    {   url: self.startfile, dataType:'text',
+		success:function(startcontent) {
 		    $.ajax(
 			{
 			    url: self.script, dataType:'text', 
-			    success:function(data) {self.blocks = data.split(/^([0-9].*\n)/).map(function(val,idx,array) { if (!(idx % 2)) { return array[idx] + array[idx+1];}});  playBlocks(self.blocks); started = true;},
+			    success:function(data) {
+				var lines = data.split("\n");
+				var regex = /^([0-9].*)/gim, result;
+				for (var i = 0; i < lines.length ; i++) {
+				    var line = lines[i];
+				    if (regex.test(line)) {
+					self.blocks.push({command:line, diff:[]});
+				    } else if (line == "#p") {
+					self.blocks.push({command:line});
+				    } else {
+					self.blocks[self.blocks.length - 1].diff.push(line);
+				    }
+				}
+				console.log(self.blocks);
+				displayed = startcontent;
+				codeContainer.text(startcontent);
+				prettyPrint();
+				pause(playBlocks(self.blocks));
+				started = true;
+			    },
 			    error: function(err) { console.log(err);}}
 		    );
 		},
-		error: function(err) { console.log(err);}}
+		error: function(err) { console.log(err); console.log(self.start);}}
 	);
 	jQelement.after("<p id='instr'></p>");
     };
@@ -105,6 +121,7 @@ function CodePlayer(start, script, selector, options) {
     }
 
     function playBlocks(blocks) {
+	console.log(blocks);
 	if (blocks.length) {
 	    playBlock(blocks[0],
 		     function () {
@@ -249,12 +266,13 @@ function CodePlayer(start, script, selector, options) {
 				});	
     }
 
-    function playBlock(block, next) {
-	command = block[0];
+    function playBlock(blocks, next) {
+	var block = blocks[0];
+	var command = block.command;
 	if (command == "#p") {
 	    pause(next);
 	} else {
-	    var diff = block.slice(1).split("\n");;
+	    var diff = block.diff;
 	    // TODO input error management
 	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
 	    var params = command.match(paramRegex).slice(1);
@@ -263,6 +281,7 @@ function CodePlayer(start, script, selector, options) {
 	    offset = displayed.split("\n").slice(params[0]).join("\n").length;
 	    for (var i = 0 ; i<diff.length; i++) {
 		var diffline = diff[i];
+		console.log(diffline);
 		if (operation == "a") {
 		    playCharacter(diffline, next);
 		} else if (operation == "d") {
