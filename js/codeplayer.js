@@ -231,11 +231,12 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function playCharacter(line, next) {
+	console.log("line insert: " + line);
 	if (line && line.indexOf("_") >= 0) {
-	    console.log("line insert: " + line);
 	    offset += line.indexOf("_");
 	    var character = line[line.indexOf("_") + 2];
 	    insertCharacter(character, offset);
+	    console.log("remaining insert: " + line.split("_").length);
 	    if (line.split("_").length > 1 ) {
 		execute(function()  { playCharacter(line.slice(line.indexOf("_") + 2), next);} );
 	    } else {
@@ -265,8 +266,6 @@ function CodePlayer(startfile, script, selector, options) {
 	    finishLine(next);
 	}
     }
-	
-
 
     function playCommand(block, next) {
 	var command = block.command;
@@ -284,21 +283,32 @@ function CodePlayer(startfile, script, selector, options) {
 	    var operation = params[2];
 	    offset = displayed.split("\n").slice(0,params[0] - 1).join("\n").length;
 	    console.log("offset command: " + offset);
-	    for (var i = 0 ; i<diff.length; i++) {
-		var diffline = diff[i].slice(2);
-		console.log(diffline);
-		if (operation == "a") {
-		    playCharacter(diffline, next);
-		} else if (operation == "d") {
-		    eraseCharacter(diffline, next);
-		} else if (operation == "c") {
-		    insertline = diff[i+2].slice(2);
-		    eraseCharacter(diffline, 
-				    function () {
-					playCharacter(insertline, next);
-				    });
-		    break;
-		}
+	    var diffline = diff[0].slice(2);
+	    console.log(diffline);
+	    if (operation == "a") {
+		playCharacter(diffline, 
+			      function () {
+				  if (diff.length > 1) {
+				      playCharacter(diff[1], next);
+				  } else {
+				      next();
+				  }
+			      });
+	    } else if (operation == "d") {
+		eraseCharacter(diffline, 			      
+			       function () {
+				   if (diff.length > 1) {
+				       eraseCharacter(diff[1], next);
+				   } else {
+				       next();
+				   }
+			       });
+	    } else if (operation == "c") {
+		insertline = diff[2].slice(2);
+		eraseCharacter(diffline, 
+			       function () {
+				   playCharacter(insertline, next);
+			       });
 	    }
 	}
     }
