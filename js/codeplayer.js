@@ -216,6 +216,7 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function insertCharacter(character, pos) {
+	console.log("inserting " +  character + " at " + pos);
 	var text = codeContainer.text();
 	displayed = text.slice(0,pos) + character + text.slice(pos);
 	codeContainer.text(displayed);	
