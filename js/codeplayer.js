@@ -77,7 +77,7 @@ function CodePlayer(startfile, script, selector, options) {
 				displayed = startcontent;
 				codeContainer.text(startcontent);
 				prettyPrint();
-				pause(playBlock(self.blocks));
+				pause(playBlocks(self.blocks));
 				started = true;
 			    },
 			    error: function(err) { console.log(err);}}
@@ -121,10 +121,10 @@ function CodePlayer(startfile, script, selector, options) {
 
     function playBlocks(blocks) {
 	if (blocks.length) {
-	    playBlock(blocks[0],
+	    playCommand(blocks[0],
 		     function () {
 			 if (blocks.length > 1) {
-			     playBocks(blocks.slice(1));
+			     playBlocks(blocks.slice(1));
 			 } else {
 			     finish();
 			 }
@@ -223,54 +223,39 @@ function CodePlayer(startfile, script, selector, options) {
 
     function removeCharacter(pos) {
 	var text = codeContainer.text();
+	console.log("removing " + text[pos]);
 	displayed = text.slice(0,pos - 1) + text.slice(pos);
 	codeContainer.text(displayed);
     }
 
     function playCharacter(line, next) {
-	offset += line.indexOf("_");
-	var character = line[line.indexOf("_") + 1];
+	offset += line.indexOf("_\cH");
+	var character = line[line.indexOf("_\cH") + 1];
 	insertCharacter(character, offset);
-	if (line.split("_").length > 1 ) {
-	    execute(function()  { playCharacter(line.slice(line.indexOf("_")), next);} );
+	if (line.split("_\cH").length > 1 ) {
+	    execute(function()  { playCharacter(line.slice(line.indexOf("_\cH")), next);} );
 	} else {
 	    finishLine(next);
 	}
     }
 
     function eraseCharacter(line, next) {
-	offsetErase = offset + line.lastIndexOf("_") + 1;
-	offset += line.indexOf("_") + 1;
+	offsetErase = offset + line.lastIndexOf("_\cH") + 1;
+	offset += line.indexOf("_\cH") + 1;
 	if (offsetErase > offset) {
 	    removeCharacter(offsetErase);
 	    offsetErase --;
 	    //execute(function() { eraseCharacter(next);}, 2);	    
-	    eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
+	    eraseCharacter(line.slice(0, line.lastIndexOf("_\cH")), next);
 	} else {
 	    finishLine(next);
-	}
-    }
-
-    function playBlock(blocks, next) {
-	var block = blocks[0];
-	console.log(blocks);
-	if (blocks.length) {
-	    playCommand(blocks[0],
-		     function () {
-			 if (blocks.length > 1) {
-			     playBock(blocks.slice(1));
-			 } else {
-			     finish();
-			 }
-		     });
-	} else {
-	    finish();
 	}
     }
 
 
     function playCommand(block, next) {
 	var command = block.command;
+	console.log(block);
 	if (command == "#p") {
 	    pause(next);
 	} else {
@@ -283,14 +268,14 @@ function CodePlayer(startfile, script, selector, options) {
 	    var operation = params[2];
 	    offset = displayed.split("\n").slice(params[0]).join("\n").length;
 	    for (var i = 0 ; i<diff.length; i++) {
-		var diffline = diff[i];
+		var diffline = diff[i].slice(2);
 		console.log(diffline);
 		if (operation == "a") {
 		    playCharacter(diffline, next);
 		} else if (operation == "d") {
 		    eraseCharacter(diffline, next);
 		} else if (operation == "c") {
-		    insertline = diff[i+2];
+		    insertline = diff[i+2].slice(2);
 		    eraseCharacter(diffline, 
 				    function () {
 					playCharacter(insertline, next);
