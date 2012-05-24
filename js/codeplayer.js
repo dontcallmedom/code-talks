@@ -77,7 +77,7 @@ function CodePlayer(startfile, script, selector, options) {
 				displayed = startcontent;
 				codeContainer.text(startcontent);
 				prettyPrint();
-				pause(playBlocks(self.blocks));
+				pause(playBlock(self.blocks));
 				started = true;
 			    },
 			    error: function(err) { console.log(err);}}
@@ -173,6 +173,7 @@ function CodePlayer(startfile, script, selector, options) {
 	    //removeCharacter(offset);
 	    paused = false;
 	    message("");
+	    console.log(nextStep);
 	    nextStep();
 	}
     }
@@ -244,7 +245,7 @@ function CodePlayer(startfile, script, selector, options) {
 	    removeCharacter(offsetErase);
 	    offsetErase --;
 	    //execute(function() { eraseCharacter(next);}, 2);	    
-	    eraseCharacter(next);
+	    eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
 	} else {
 	    finishLine(next);
 	}
