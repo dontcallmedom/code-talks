@@ -66,7 +66,7 @@ function CodePlayer(url, selector, options) {
     this.restart = function() {
 	init();
 	message("");
-	playLines(this.lines);
+	playLines(self.lines);
     };
 
     this.show = function() {
