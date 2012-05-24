@@ -1,10 +1,11 @@
-function CodePlayer(url, selector, options) {
-    this.url = new URI(url);
-    this.lines = [];
+function CodePlayer(start, script, selector, options) {
+    this.start = start;    
+    this.script = new URI(script);
+    this.blocks = [];
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started, beyondFirstStep, nopause;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause, command;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -18,7 +19,7 @@ function CodePlayer(url, selector, options) {
 	beyondFirstStep = false;
 	started = false;
 	offset = 0;
-	currentLine = 0;
+	currentBlock = 0;
 	insert = {content:""};
 	nextStep = function() {};
 	this.onFinish = function() {};
@@ -28,12 +29,12 @@ function CodePlayer(url, selector, options) {
 				    var state = event.state;
 				    if (state) {
 					offset = state.offset;
-					currentLine = state.currentLine;
+					currentBlock = state.currentBlock;
 					nextStep = function() {};
 					displayed = state.displayed;
 					setCode(displayed);
 					prettyPrint();
-					playLines(self.lines.slice(currentLine));	
+					playLines(self.blocks.slice(currentBlock));	
 				    }
 				});
     };  
@@ -55,9 +56,18 @@ function CodePlayer(url, selector, options) {
 	    });
 	//jQelement.click(unpause);
 	$.ajax(
-	    {
-		url: self.url, dataType:'text', 
-		success:function(data) {self.lines = data.split("\n");  playLines(self.lines); started = true;},
+	    {   url: self.start, dataType:'text',
+		success:function(data) {
+		    displayed = data;
+		    codeContainer.text(data);
+		    prettyPrint();
+		    $.ajax(
+			{
+			    url: self.script, dataType:'text', 
+			    success:function(data) {self.blocks = data.split(/^[0-9].*\n/);  playBlocks(self.blocks); started = true;},
+			    error: function(err) { console.log(err);}}
+		    );
+		},
 		error: function(err) { console.log(err);}}
 	);
 	jQelement.after("<p id='instr'></p>");
@@ -66,7 +76,7 @@ function CodePlayer(url, selector, options) {
     this.restart = function() {
 	init();
 	message("");
-	playLines(this.lines);
+	playBlocks(self.blocks);
     };
 
     this.show = function() {
@@ -121,7 +131,7 @@ function CodePlayer(url, selector, options) {
 		codeContainer.append(tmp);
 	    }
 	}
-	currentLine++;
+	currentBlock++;
 	prettyPrint();
 	next();
     }
@@ -152,8 +162,8 @@ function CodePlayer(url, selector, options) {
     }
 
     function manageHistory() {
-	var state = {displayed:displayed, offset:offset, currentLine:currentLine};
-	history.pushState(state, "Step " + currentLine, "#s" + currentLine);
+	var state = {displayed:displayed, offset:offset, currentBlock:currentBlock};
+	history.pushState(state, "Step " + currentBlock, "#s" + currentBlock);
     }
 
     function calculatePosition(search, before) {
@@ -225,7 +235,7 @@ function CodePlayer(url, selector, options) {
     function showInclude(url, next) {
 	var iframe = $("<iframe width='100%'></iframe>");
 	var relUrl = new URI(url);
-	iframe.attr("src",relUrl.resolve(self.url));
+	iframe.attr("src",relUrl.resolve(self.script));
 	slideContainer.html();
 	slideContainer.append(iframe);
 	iframe.attr("height",codeContainer.get(0).clientHeight);
@@ -238,32 +248,29 @@ function CodePlayer(url, selector, options) {
     }
 
     function playLine(line, next) {
-	var command = "";
-	if (line.length > 0 && line[0] == '#') {
-	    command = line[1];
-	    if (command == "a" || command == "b" || command == "r") {
-		var search = line.slice(2).split("→")[0];
-		var pos = calculatePosition(search, (command == "b"));
-		if (offset == -1) {
-		    finishLine(next);
-		} else {
-		    offset = pos;
+	if (line.length > 0 && line[0] != '<' && line[0] != '>') {
+	    if (line[0] == "#" && line.length > 2) {
+		command = line[1];
+	    } else { // diff instructions
+		var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
+		var params = line.match(paramRegex).slice(1);
+		command = params[2];
+		if (command == "a" || command == "b" || command == "r") {
+		    var search = line.slice(2).split("→")[0];
+		    var pos = calculatePosition(search, (command == "b"));
+		    if (offset == -1) {
+			finishLine(next);
+		    } else {
+			offset = pos;
+		    }
+		    if (command == "r") {
+			var until = line.slice(2).split("→").slice(1).join("→");
+			offsetErase = calculatePosition(until, true);
+		    }
 		}
-		if (command == "r") {
-		    var until = line.slice(2).split("→").slice(1).join("→");
-		    offsetErase = calculatePosition(until, true);
-		}
-	    } else if (command == "$") {
-		offset = displayed.length;
-	    } else if (command == "^") {
-		offset = 0;
-	    } else if (command == "-") {
-		offset = Math.max(displayed.slice(0,displayed.slice(0,offset).lastIndexOf("\n")).lastIndexOf("\n") + 1, 0);
 	    }
-	    if (command == "#") {
-		command = "";
-		line = line.slice(1);
-	    }
+	} else if (line[0] == '>' || line[0] == '<') {
+		
 	}
 	if (command == "") {
 	    line += "\n";
