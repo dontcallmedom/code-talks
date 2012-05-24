@@ -77,7 +77,7 @@ function CodePlayer(startfile, script, selector, options) {
 				displayed = startcontent;
 				codeContainer.text(startcontent);
 				prettyPrint();
-				pause(playBlocks(self.blocks));
+				playBlocks(self.blocks);
 				started = true;
 			    },
 			    error: function(err) { console.log(err);}}
@@ -121,6 +121,7 @@ function CodePlayer(startfile, script, selector, options) {
 
     function playBlocks(blocks) {
 	if (blocks.length) {
+	    console.log("Playing block");	    
 	    playCommand(blocks[0],
 		     function () {
 			 if (blocks.length > 1) {
@@ -230,24 +231,25 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function playCharacter(line, next) {
-	offset += line.indexOf("_\cH");
-	var character = line[line.indexOf("_\cH") + 1];
+	offset += line.indexOf("_");
+	var character = line[line.indexOf("_") + 2];
 	insertCharacter(character, offset);
-	if (line.split("_\cH").length > 1 ) {
-	    execute(function()  { playCharacter(line.slice(line.indexOf("_\cH")), next);} );
+	if (line.split("_").length > 1 ) {
+	    execute(function()  { playCharacter(line.slice(line.indexOf("_")), next);} );
 	} else {
 	    finishLine(next);
 	}
     }
 
     function eraseCharacter(line, next) {
-	offsetErase = offset + line.lastIndexOf("_\cH") + 1;
-	offset += line.indexOf("_\cH") + 1;
+	offsetErase = offset + line.lastIndexOf("_") + 2;
+	console.log("offset erase: " + offsetErase);
+	offset += line.indexOf("_") + 1;
 	if (offsetErase > offset) {
 	    removeCharacter(offsetErase);
-	    offsetErase --;
+	    offsetErase -=2-;
 	    //execute(function() { eraseCharacter(next);}, 2);	    
-	    eraseCharacter(line.slice(0, line.lastIndexOf("_\cH")), next);
+	    eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
 	} else {
 	    finishLine(next);
 	}
@@ -258,6 +260,7 @@ function CodePlayer(startfile, script, selector, options) {
 	var command = block.command;
 	console.log(block);
 	if (command == "#p") {
+	    console.log("next: " + next);
 	    pause(next);
 	} else {
 	    var diff = block.diff;
@@ -267,7 +270,8 @@ function CodePlayer(startfile, script, selector, options) {
 	    console.log(params);
 	    // 1,2a1 => params=[1,2,'a',1,null]
 	    var operation = params[2];
-	    offset = displayed.split("\n").slice(params[0]).join("\n").length;
+	    offset = displayed.split("\n").slice(0,params[0] - 1).join("\n").length;
+	    console.log("offset command: " + offset);
 	    for (var i = 0 ; i<diff.length; i++) {
 		var diffline = diff[i].slice(2);
 		console.log(diffline);
