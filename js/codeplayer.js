@@ -121,7 +121,6 @@ function CodePlayer(startfile, script, selector, options) {
 
     function playBlocks(blocks) {
 	if (blocks.length) {
-	    console.log("Playing block");	    
 	    playCommand(blocks[0],
 		     function () {
 			 if (blocks.length > 1) {
@@ -157,7 +156,6 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function pause(next) {
-	console.log(next);
 	beyondFirstStep = true;
 	paused = true;
 	if (!nopause) {
@@ -174,7 +172,6 @@ function CodePlayer(startfile, script, selector, options) {
 	    //removeCharacter(offset);
 	    paused = false;
 	    message("");
-	    console.log(nextStep);
 	    nextStep();
 	}
     }
@@ -217,7 +214,6 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function insertCharacter(character, pos) {
-	console.log("inserting " +  character + " at " + pos);
 	var text = codeContainer.text();
 	displayed = text.slice(0,pos) + character + text.slice(pos);
 	codeContainer.text(displayed);	
@@ -225,14 +221,11 @@ function CodePlayer(startfile, script, selector, options) {
 
     function removeCharacter(pos) {
 	var text = codeContainer.text();
-	console.log("removing " + text[pos - 1]);
 	displayed = text.slice(0,pos -1) + text.slice(pos);
 	codeContainer.text(displayed);
     }
 
     function playCharacter(diff, next) {
-	console.log("line insert: ");
-	console.log(diff);
 	var line = diff[0].slice(2);
 	if (line && line.indexOf("_") >= 0) {
 	    offset += line.indexOf("_");
@@ -241,7 +234,6 @@ function CodePlayer(startfile, script, selector, options) {
 		character = "\n";
 	    }
 	    insertCharacter(character, offset);
-	    console.log("remaining insert: " + (line.split("_").length - 1));
 	    if (line.split("_").length > 2 ) {
 		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
 	    } else {
@@ -258,17 +250,9 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function eraseCharacter(diff, next) {
-	console.log("erase line: ");
-	console.log(diff);
 	var line = diff[0].slice(2);
-	console.log("erase line: " + line);
 	if (line && line.indexOf("_") >= 0) {
 	    offsetErase = offset + line.lastIndexOf("_") - (line.split("_").length - 2 ) *2 + 1;
-	    console.log(line.lastIndexOf("_"));
-	    console.log(line.split("_").length);
-	    console.log("offset erase: " + offsetErase);
-	    console.log("line: " + line);
-	    //offset += line.indexOf("_") + 1;
 	    if (offsetErase > offset) {
 		removeCharacter(offsetErase);
 		execute(function() { eraseCharacter(["  " + line.slice(0, line.lastIndexOf("_"))].concat(diff.slice(1)), next);});
@@ -287,16 +271,13 @@ function CodePlayer(startfile, script, selector, options) {
 
     function playCommand(block, next) {
 	var command = block.command;
-	console.log(block);
 	if (command == "#p") {
-	    console.log("next: " + next);
 	    pause(next);
 	} else {
 	    var diff = block.diff;
 	    // TODO input error management
 	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
 	    var params = command.match(paramRegex).slice(1);
-	    console.log(params);
 	    // 1,2a1 => params=[1,2,'a',1,null]
 	    var operation = params[2];
 	    var startLine = 0;
@@ -306,7 +287,6 @@ function CodePlayer(startfile, script, selector, options) {
 	    } else {
 		offset = 0;
 	    }
-	    console.log("offset command: " + offset);
 	    if (operation == "a") {
 		playCharacter(diff,next);
 	    } else if (operation == "d") {
