@@ -1,15 +1,13 @@
-This tool allows to display a code source progressively in an HTML page (with syntax highlighting from [code-prettify](http://code.google.com/p/google-code-prettify/)) according to a script.
+This tool allows to display a code source progressively in an HTML page (with syntax highlighting from [code-prettify](http://code.google.com/p/google-code-prettify/)).
 
-That script uses the following syntax:
-* any line not starting with a # will be displayed as a regular line of code
-* a line starting with a # starts a special operation
-* #p means that the viewer should pause before interpreting the next line (and until spacebar is hit)
-* #a (resp #b) moves the insert point after (resp before) to the first match of the string following the command
-* #$ moves to end of file
-* #^ moves to start of file
-* #- moves to previous line
-* #r allows to remove the code present between two pieces of code; the two pieces are the first match of the strings separated by "→"
-* #@ allows to show the content of an external resource (e.g. to give explanations); the url of the resource to be included needs to follow the @ sign, e.g. #@foo.html will include foo.html
+The code is displayed based on its evolution captured in a script file; that script file is most easily generated via git, with a special diff tool, [spiff](https://github.com/dontcallmedom/spiff).
 
+Store each of the step of the file you want to walk through as a git commit, and then generate the script to be used by the player with:
+  git difftool -y --extcmd /path/to/spiff <idfirstcommit> <filename>
+
+The output of that command can then be used as the script for the player.
+
+In addition to the diff, the script can also accept the following commands (in between diff blocks):
+* #p to pause the player
 
 See it [in action on an example](http://dontcallmedom.github.com/code-talks/player.html).
