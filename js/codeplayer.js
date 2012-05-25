@@ -5,13 +5,14 @@ function CodePlayer(startfile, script, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, inserts, currentInsert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause;
+    var displayed, frozen, offset, inserts, currentInsert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause, postContentTo;
 
     function init () {
 	jQelement.addClass("codeplayer");
 	codeContainer = $("<pre class='front prettyprint'></pre>").appendTo(jQelement);
 	slideContainer = $("<div class='back'></div>").appendTo(jQelement);
 	displayMode = (displayMode ? displayMode : (self.options["mode"]=="show" ? "show" : "type")); // "type" for progressive display, "show" for direct display
+	postContentTo = (postContentTo ? postContentTo : (self.options["postContentTo"] ? self.options["postContentTo"] : ""));
 	nopause = (nopause ? nopause : (self.options["nopause"]==true));
 	displayed = "";
 	frozen = false;
@@ -152,7 +153,9 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function finishDiff(next) {
-	console.log(inserts);
+	if (postContentTo) {
+	    $.post(postContentTo, {file:self.startfile, content: codeContainer.text()});
+	}
 	currentBlock++;
 	prettyPrint();
 	next();
