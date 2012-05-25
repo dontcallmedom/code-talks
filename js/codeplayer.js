@@ -5,7 +5,7 @@ function CodePlayer(startfile, script, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause;
+    var displayed, frozen, offset, inserts, currentInsert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -20,7 +20,7 @@ function CodePlayer(startfile, script, selector, options) {
 	started = false;
 	offset = 0;
 	currentBlock = 0;
-	insert = {content:""};
+	inserts = [];
 	nextStep = function() {};
 	this.onFinish = function() {};
 	this.onStep = manageHistory;
@@ -134,18 +134,23 @@ function CodePlayer(startfile, script, selector, options) {
 	}
     }
 
-    function finishLine(next) {
-	if (insert.offset != null) {
-	    if (beyondFirstStep) {
-		var text = codeContainer.text();
-		codeContainer.text(text.slice(0,insert.offset));
-		if (insert.content.length) {
-		    codeContainer.append($("<strong></strong>").text(insert.content));		    
+    function finishDiff(next) {
+	console.log(inserts);
+	if (inserts.length) {
+	    for (var i = 0; i < inserts.length; i++) {
+		var insert = inserts[i];
+		if (beyondFirstStep) {
+		    var text = codeContainer.text();
+		    codeContainer.text(text.slice(0,insert.offset));
+		    if (insert.content.length) {
+			codeContainer.append($("<strong></strong>").text(insert.content));		    
+		    }
+		    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
+		    codeContainer.append(tmp);
 		}
-		var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
-		codeContainer.append(tmp);
 	    }
 	}
+	inserts = [];
 	currentBlock++;
 	prettyPrint();
 	next();
@@ -229,23 +234,30 @@ function CodePlayer(startfile, script, selector, options) {
 	var line = diff[0].slice(2);
 	if (line && line.indexOf("_") >= 0) {
 	    offset += line.indexOf("_");
+	    // First insert in line
+	    if (diff[0][0] == ">") {
+		currentInsert.offset = offset;
+	    }
 	    var character = line[line.indexOf("_") + 2];
 	    if (!character) {
 		character = "\n";
 	    }
 	    insertCharacter(character, offset);
+	    currentInsert.content += character;
 	    if (line.split("_").length > 2 ) {
 		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
 	    } else {
 		if (diff.length > 1) {
 		    offset++;
+		    inserts.push({offset:currentInsert.offset,content:currentInsert.content});
+		    currentInsert = {offset:offset,content:""};
 		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
-		    finishLine(next);
+		    finishDiff(next);
 		}
 	    }
 	} else {
-	    finishLine(next);
+	    finishDiff(next);
 	}
     }
 
@@ -261,11 +273,11 @@ function CodePlayer(startfile, script, selector, options) {
 		if (diff.length > 1) { 
 		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
-		    finishLine(next);
+		    finishDiff(next);
 		}
 	    }
 	} else {
-	    finishLine(next);
+	    finishDiff(next);
 	}
     }
 
@@ -288,6 +300,7 @@ function CodePlayer(startfile, script, selector, options) {
 		offset = 0;
 	    }
 	    if (operation == "a") {
+		currentInsert = {offset:offset, content:""};
 		playCharacter(diff,next);
 	    } else if (operation == "d") {
 		eraseCharacter(diff, next);
