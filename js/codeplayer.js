@@ -1,10 +1,11 @@
-function CodePlayer(url, selector, options) {
-    this.url = new URI(url);
-    this.lines = [];
+function CodePlayer(startfile, script, selector, options) {
+    this.startfile = startfile;
+    this.script = new URI(script);
+    this.blocks = [];
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentLine, paused, started, beyondFirstStep, nopause;
+    var displayed, frozen, offset, insert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -18,7 +19,7 @@ function CodePlayer(url, selector, options) {
 	beyondFirstStep = false;
 	started = false;
 	offset = 0;
-	currentLine = 0;
+	currentBlock = 0;
 	insert = {content:""};
 	nextStep = function() {};
 	this.onFinish = function() {};
@@ -28,12 +29,12 @@ function CodePlayer(url, selector, options) {
 				    var state = event.state;
 				    if (state) {
 					offset = state.offset;
-					currentLine = state.currentLine;
+					currentBlock = state.currentBlock;
 					nextStep = function() {};
 					displayed = state.displayed;
 					setCode(displayed);
 					prettyPrint();
-					playLines(self.lines.slice(currentLine));	
+					playBlocks(self.blocks.slice(currentBlock));	
 				    }
 				});
     };  
@@ -55,10 +56,34 @@ function CodePlayer(url, selector, options) {
 	    });
 	//jQelement.click(unpause);
 	$.ajax(
-	    {
-		url: self.url, dataType:'text', 
-		success:function(data) {self.lines = data.split("\n");  playLines(self.lines); started = true;},
-		error: function(err) { console.log(err);}}
+	    {   url: self.startfile, dataType:'text',
+		success:function(startcontent) {
+		    $.ajax(
+			{
+			    url: self.script, dataType:'text', 
+			    success:function(data) {
+				var lines = data.split("\n");
+				var regex = /^([0-9].*)/gim, result;
+				for (var i = 0; i < lines.length ; i++) {
+				    var line = lines[i];
+				    if (regex.test(line)) {
+					self.blocks.push({command:line, diff:[]});
+				    } else if (line == "#p") {
+					self.blocks.push({command:line});
+				    } else if (self.blocks[self.blocks.length - 1].diff) {
+					self.blocks[self.blocks.length - 1].diff.push(line);
+				    }
+				}
+				displayed = startcontent;
+				codeContainer.text(startcontent);
+				prettyPrint();
+				playBlocks(self.blocks);
+				started = true;
+			    },
+			    error: function(err) { console.log(err);}}
+		    );
+		},
+		error: function(err) { console.log(err); console.log(self.startfile);}}
 	);
 	jQelement.after("<p id='instr'></p>");
     };
@@ -66,7 +91,7 @@ function CodePlayer(url, selector, options) {
     this.restart = function() {
 	init();
 	message("");
-	playLines(self.lines);
+	playBlocks(self.blocks);
     };
 
     this.show = function() {
@@ -94,12 +119,13 @@ function CodePlayer(url, selector, options) {
 	//self.onFinish();			 	
     }
 
-    function playLines(lines) {
-	if (lines.length) {
-	    playLine(lines[0],
+    function playBlocks(blocks) {
+	if (blocks.length) {
+	    console.log("Playing block");	    
+	    playCommand(blocks[0],
 		     function () {
-			 if (lines.length > 1) {
-			     playLines(lines.slice(1));
+			 if (blocks.length > 1) {
+			     playBlocks(blocks.slice(1));
 			 } else {
 			     finish();
 			 }
@@ -121,7 +147,7 @@ function CodePlayer(url, selector, options) {
 		codeContainer.append(tmp);
 	    }
 	}
-	currentLine++;
+	currentBlock++;
 	prettyPrint();
 	next();
     }
@@ -131,6 +157,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function pause(next) {
+	console.log(next);
 	beyondFirstStep = true;
 	paused = true;
 	if (!nopause) {
@@ -147,13 +174,14 @@ function CodePlayer(url, selector, options) {
 	    //removeCharacter(offset);
 	    paused = false;
 	    message("");
+	    console.log(nextStep);
 	    nextStep();
 	}
     }
 
     function manageHistory() {
-	var state = {displayed:displayed, offset:offset, currentLine:currentLine};
-	history.pushState(state, "Step " + currentLine, "#s" + currentLine);
+	var state = {displayed:displayed, offset:offset, currentBlock:currentBlock};
+	history.pushState(state, "Step " + currentBlock, "#s" + currentBlock);
     }
 
     function calculatePosition(search, before) {
@@ -179,7 +207,7 @@ function CodePlayer(url, selector, options) {
 
     function execute(fn, timeout) {
 	if (!timeout) {
-	    timeout = 10;
+	    timeout = 20;
 	}
 	if (displayMode == "type") {
 	    setTimeout(fn, timeout);	
@@ -189,6 +217,7 @@ function CodePlayer(url, selector, options) {
     }
 
     function insertCharacter(character, pos) {
+	console.log("inserting " +  character + " at " + pos);
 	var text = codeContainer.text();
 	displayed = text.slice(0,pos) + character + text.slice(pos);
 	codeContainer.text(displayed);	
@@ -196,105 +225,94 @@ function CodePlayer(url, selector, options) {
 
     function removeCharacter(pos) {
 	var text = codeContainer.text();
-	displayed = text.slice(0,pos - 1) + text.slice(pos);
+	console.log("removing " + text[pos - 1]);
+	displayed = text.slice(0,pos -1) + text.slice(pos);
 	codeContainer.text(displayed);
     }
 
-    function playCharacter(line, next) {
-	var character = line[0];
-	insertCharacter(character, offset);
-	offset++;
-	if (line.length > 1 ) {
-	    execute(function()  { playCharacter(line.slice(1), next);} );
-	} else {
-	    finishLine(next);
-	}
-    }
-
-    function eraseCharacter(next) {
-	if (offsetErase > offset) {
-	    removeCharacter(offsetErase);
-	    offsetErase --;
-	    //execute(function() { eraseCharacter(next);}, 2);	    
-	    eraseCharacter(next);
-	} else {
-	    finishLine(next);
-	}
-    }
-
-    function showInclude(url, next) {
-	var iframe = $("<iframe width='100%'></iframe>");
-	var relUrl = new URI(url);
-	iframe.attr("src",relUrl.resolve(self.url));
-	slideContainer.html();
-	slideContainer.append(iframe);
-	iframe.attr("height",codeContainer.get(0).clientHeight);
-	jQelement.addClass("flip");		    	
-	var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
-				function () {
-				    finishLine(next);
-				    jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
-				});	
-    }
-
-    function playLine(line, next) {
-	var command = "";
-	if (line.length > 0 && line[0] == '#') {
-	    command = line[1];
-	    if (command == "a" || command == "b" || command == "r") {
-		var search = line.slice(2).split("→")[0];
-		var pos = calculatePosition(search, (command == "b"));
-		if (offset == -1) {
-		    finishLine(next);
+    function playCharacter(diff, next) {
+	console.log("line insert: ");
+	console.log(diff);
+	var line = diff[0].slice(2);
+	if (line && line.indexOf("_") >= 0) {
+	    offset += line.indexOf("_");
+	    var character = line[line.indexOf("_") + 2];
+	    insertCharacter(character, offset);
+	    console.log("remaining insert: " + (line.split("_").length - 1));
+	    if (line.split("_").length > 2 ) {
+		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
+	    } else {
+		if (diff.length > 1) {
+		    insertCharacter("\n", offset++);
+		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
-		    offset = pos;
+		    finishLine(next);
 		}
-		if (command == "r") {
-		    var until = line.slice(2).split("→").slice(1).join("→");
-		    offsetErase = calculatePosition(until, true);
-		}
-	    } else if (command == "$") {
-		offset = displayed.length;
-	    } else if (command == "^") {
-		offset = 0;
-	    } else if (command == "-") {
-		offset = Math.max(displayed.slice(0,displayed.slice(0,offset).lastIndexOf("\n")).lastIndexOf("\n") + 1, 0);
 	    }
-	    if (command == "#") {
-		command = "";
-		line = line.slice(1);
-	    }
-	}
-	if (command == "") {
-	    line += "\n";
-	}
-	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
-	    insert.offset = offset;
-	} else if (command == "r" || command == "@" || command == "p") {
-	    insert.content = "";
-	} else if (command == "") {
-	    if (insert.content == "") {
-		insert.offset = offset;
-	    }
-	    insert.content += line;		
-	}
-	if (command == "p") {
-	    pause(next);
-	} else if (command == "@") {
-	    // #@foo means show "foo" in an iframe in slideContainer
-	    if (line.length > 2) {
-		showInclude(line.slice(2), next);
-	    }
-	} else if (command == "r") {
-	    eraseCharacter(next);
-	} else if (command != "") {
-	    finishLine(next);
 	} else {
-	    jQelement.removeClass("flip");
-	    // Reinit code shown
-	    setCode(displayed);
-	    playCharacter(line,next);		    
+	    finishLine(next);
 	}
     }
 
+    function eraseCharacter(diff, next) {
+	console.log("erase line: ");
+	console.log(diff);
+	var line = diff[0].slice(2);
+	console.log("erase line: " + line);
+	if (line && line.indexOf("_") >= 0) {
+	    offsetErase = offset + line.lastIndexOf("_") - (line.split("_").length - 2 ) *2 + 1;
+	    console.log(line.lastIndexOf("_"));
+	    console.log(line.split("_").length);
+	    console.log("offset erase: " + offsetErase);
+	    console.log("line: " + line);
+	    //offset += line.indexOf("_") + 1;
+	    if (offsetErase > offset) {
+		removeCharacter(offsetErase);
+		execute(function() { eraseCharacter(["  " + line.slice(0, line.lastIndexOf("_"))].concat(diff.slice(1)), next);});
+		//eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
+	    } else {
+		if (diff.length > 1) { 
+		    execute(function()  { playCharacter(diff.slice(1), next);});
+		} else {
+		    finishLine(next);
+		}
+	    }
+	} else {
+	    finishLine(next);
+	}
+    }
+
+    function playCommand(block, next) {
+	var command = block.command;
+	console.log(block);
+	if (command == "#p") {
+	    console.log("next: " + next);
+	    pause(next);
+	} else {
+	    var diff = block.diff;
+	    // TODO input error management
+	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
+	    var params = command.match(paramRegex).slice(1);
+	    console.log(params);
+	    // 1,2a1 => params=[1,2,'a',1,null]
+	    var operation = params[2];
+	    if (params[0] > 1) {
+		offset = displayed.split("\n").slice(0,params[0] - 1).join("\n").length + 1;
+	    } else {
+		offset = 0;
+	    }
+	    console.log("offset command: " + offset);
+	    if (operation == "a") {
+		playCharacter(diff,next);
+	    } else if (operation == "d") {
+		eraseCharacter(diff, next);
+	    } else if (operation == "c") {
+		insertline = [diff[2]];
+		eraseCharacter([diff[0]], 
+			       function () {
+				   playCharacter(insertline, next);
+			       });
+	    }
+	}
+    }
 };
