@@ -134,23 +134,25 @@ function CodePlayer(startfile, script, selector, options) {
 	}
     }
 
+    function highlightInserts(inserts, code, baseOffset) {
+	if (inserts.length) {
+	    console.log(code);
+	    console.log(baseOffset);
+	    var insert = inserts[0];
+	    console.log(insert);
+	    codeContainer.append($("<span></span>").text(code.slice(baseOffset,insert.offset)));
+	    if (insert.content.length) {
+		codeContainer.append($("<strong></strong>").text(insert.content));		    
+	    }
+	    highlightInserts(inserts.slice(1), code, insert.offset + insert.content.length);
+	} else {
+	    // insert code
+	    codeContainer.append($("<span></span>").text(code.slice(baseOffset)));
+	}
+    }
+
     function finishDiff(next) {
 	console.log(inserts);
-	if (inserts.length) {
-	    for (var i = 0; i < inserts.length; i++) {
-		var insert = inserts[i];
-		if (beyondFirstStep) {
-		    var text = codeContainer.text();
-		    codeContainer.text(text.slice(0,insert.offset));
-		    if (insert.content.length) {
-			codeContainer.append($("<strong></strong>").text(insert.content));		    
-		    }
-		    var tmp = $("<div></div>").text(text.slice(insert.offset + insert.content.length));
-		    codeContainer.append(tmp);
-		}
-	    }
-	}
-	inserts = [];
 	currentBlock++;
 	prettyPrint();
 	next();
@@ -162,7 +164,12 @@ function CodePlayer(startfile, script, selector, options) {
 
     function pause(next) {
 	beyondFirstStep = true;
+	var code = codeContainer.text();
+	codeContainer.html("");
+	highlightInserts(inserts, code, 0);
+	prettyPrint();
 	paused = true;
+	inserts = [];
 	if (!nopause) {
 	    message("Press spacebar to continue");
             nextStep = next;
@@ -247,16 +254,18 @@ function CodePlayer(startfile, script, selector, options) {
 	    if (line.split("_").length > 2 ) {
 		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
 	    } else {
+		inserts.push({offset:currentInsert.offset,content:currentInsert.content});
+		currentInsert = {offset:offset,content:""};
 		if (diff.length > 1) {
 		    offset++;
-		    inserts.push({offset:currentInsert.offset,content:currentInsert.content});
-		    currentInsert = {offset:offset,content:""};
 		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
 		    finishDiff(next);
 		}
 	    }
 	} else {
+	    inserts.push({offset:currentInsert.offset,content:currentInsert.content});
+	    currentInsert = {offset:offset,content:""};
 	    finishDiff(next);
 	}
     }
