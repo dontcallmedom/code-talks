@@ -237,14 +237,15 @@ function CodePlayer(startfile, script, selector, options) {
 	if (line && line.indexOf("_") >= 0) {
 	    offset += line.indexOf("_");
 	    var character = line[line.indexOf("_") + 2];
+	    if (!character) {
+		character = "\n";
+	    }
 	    insertCharacter(character, offset);
 	    console.log("remaining insert: " + (line.split("_").length - 1));
 	    if (line.split("_").length > 2 ) {
 		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
 	    } else {
 		if (diff.length > 1) {
-		    offset++;
-		    insertCharacter("\n", offset);
 		    offset++;
 		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
