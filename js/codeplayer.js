@@ -243,7 +243,9 @@ function CodePlayer(startfile, script, selector, options) {
 		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
 	    } else {
 		if (diff.length > 1) {
-		    insertCharacter("\n", offset++);
+		    offset++;
+		    insertCharacter("\n", offset);
+		    offset++;
 		    execute(function()  { playCharacter(diff.slice(1), next);});
 		} else {
 		    finishLine(next);
@@ -296,8 +298,10 @@ function CodePlayer(startfile, script, selector, options) {
 	    console.log(params);
 	    // 1,2a1 => params=[1,2,'a',1,null]
 	    var operation = params[2];
-	    if (params[0] > 1) {
-		offset = displayed.split("\n").slice(0,params[0] - 1).join("\n").length + 1;
+	    var startLine = 0;
+	    startLine = params[3];
+	    if (startLine > 1) {
+		offset = displayed.split("\n").slice(0,startLine - 1).join("\n").length + 1;
 	    } else {
 		offset = 0;
 	    }
