@@ -311,10 +311,9 @@ function CodePlayer(startfile, script, selector, options) {
 	    } else if (operation == "d") {
 		eraseCharacter(diff, next);
 	    } else if (operation == "c") {
-		insertline = [diff[2]];
 		eraseCharacter([diff[0]], 
 			       function () {
-				   playCharacter(insertline, next);
+				   playCharacter([diff[2]], next);
 			       });
 	    }
 	}
