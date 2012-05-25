@@ -54,11 +54,13 @@ font-size:2em;
  -webkit-box-shadow: 0 1px 5px rgba(0,0,0,0.9);
 }
 
-.prettyprint strong {
+.prettyprint ins {
   text-shadow: black 1px 1px;
+  font-weight:bold;
+  text-decoration: none;
 }
 
-.prettyprint span:hover {
+.prettyprint span[class]:hover {
   font-weight:bold;
 }
 

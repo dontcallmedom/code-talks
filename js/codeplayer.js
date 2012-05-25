@@ -142,7 +142,7 @@ function CodePlayer(startfile, script, selector, options) {
 	    console.log(insert);
 	    codeContainer.append($("<span></span>").text(code.slice(baseOffset,insert.offset)));
 	    if (insert.content.length) {
-		codeContainer.append($("<strong></strong>").text(insert.content));		    
+		codeContainer.append($("<ins></ins>").text(insert.content));		    
 	    }
 	    highlightInserts(inserts.slice(1), code, insert.offset + insert.content.length);
 	} else {
