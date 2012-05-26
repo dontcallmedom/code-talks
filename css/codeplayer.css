@@ -55,7 +55,9 @@ font-size:2em;
 }
 
 .prettyprint ins {
+  font-weight:bold;
   text-shadow: black 1px 1px;
+  text-decoration:none;
 }
 
 .prettyprint span:hover {
