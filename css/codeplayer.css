@@ -56,11 +56,9 @@ font-size:2em;
 
 .prettyprint ins {
   text-shadow: black 1px 1px;
-  font-weight:bold;
-  text-decoration: none;
 }
 
-.prettyprint span[class]:hover {
+.prettyprint span:hover {
   font-weight:bold;
 }
 
