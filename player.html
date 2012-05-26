@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctye html>
 <html>
 <head>
 <meta charset=utf-8>
@@ -7,31 +7,57 @@
 <link href="css/codeplayer.css" rel="stylesheet"/>
 </head>
 <body>
-<input class="playerselector" type="button" value="example/input-index.html" data-script="example/play-script">
+<input class="playerselector" type="button" value="index.html" data-script="example/html-script"><input  class="playerselector" type="button" value="cache.manifest" data-script="example/cache-script"><input   class="playerselector" type="button" value="script.js" data-script="example/js-script">
 <div id="play">
 
 </div>
 
 <script src="js/prettify.js"></script>
 <script src="js/jquery.min.js"></script>
+<script src="js/jquery.scrollTo.min.js"></script>
 <script src="js/URI.js"></script>
 <script src="js/codeplayer.js"></script>
 <script>
-jQuery(document).ready(function ($) {
   var players = {};
   var currentPlayer = null;
+  var fileButton;
   $("input.playerselector").each(function() {
-    players[$(this).val()] = new CodePlayer($(this).val(), $(this).attr("data-script"), "#play");
+    file = $(this).val();   
+    players[file] = new CodePlayer(file, $(this).attr("data-script"), "#play");
   });
-  $("input.playerselector").click(function() {
-    if (currentPlayer) {
-       currentPlayer.freeze();
-       currentPlayer.hide();
+$("input.playerselector").live("click", function() {
+  input = $(this);
+  file = input.val();
+  if (currentPlayer) {
+    currentPlayer.freeze();
+    currentPlayer.hide();
+    $("select[data-script=" + currentPlayer.url + "]").replaceWith(fileButton);
+  }
+  currentPlayer = players[file];
+
+  currentPlayer.onUnfreeze = function () {
+    fileButton = input.clone();
+    var stepSelector = $("<select></select>").attr("data-script",file);
+    for (var i = 0 ; i < currentPlayer.length() ; i++) {
+      var opt = $("<option></option>").text("Step " + i).val(i);
+      opt.appendTo(stepSelector);
     }
-    players[$(this).val()].unfreeze();
-    players[$(this).val()].show();
-    currentPlayer = players[$(this).val()];
-  });
+    stepSelector.val(currentPlayer.currentStep());
+    stepSelector.change(function() {
+       console.log($(this).val());
+       currentPlayer.gotoStep($(this).val());
+    });
+    input.replaceWith(stepSelector);
+    currentPlayer.onStep = function() {
+       $(":selected", stepSelector).removeAttr("disabled");
+       $("option[value=" + currentPlayer.currentStep() + "]", stepSelector).attr("disabled", true);
+       stepSelector.val(currentPlayer.currentStep());
+    };
+
+  };
+  currentPlayer.unfreeze();
+  currentPlayer.show();
+
 });
 </script>
 </body>
