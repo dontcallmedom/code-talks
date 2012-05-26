@@ -1,11 +1,11 @@
-function CodePlayer(startfile, script, selector, options) {
-    this.startfile = startfile;
+function CodePlayer(url, script, selector, options) {
+    this.url = url;
     this.script = new URI(script);
-    this.blocks = [];
+    this.lines = [];
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, inserts, currentInsert, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, currentBlock, paused, started, beyondFirstStep, nopause, postContentTo;
+    var displayed, frozen, offset, currentInsert, inserts, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, paused, started, nopause, postContentTo, lastScrollPoint, ffwd, stepNumber, currentStep, delay, onceDone;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -17,25 +17,26 @@ function CodePlayer(startfile, script, selector, options) {
 	displayed = "";
 	frozen = false;
 	paused = false;
-	beyondFirstStep = false;
+	ffwd = false;
 	started = false;
+	currentInsert = {};
+	currentStep = 0;
 	offset = 0;
-	currentBlock = 0;
+	lastScrollPoint = 0;
 	inserts = [];
+	delay = 0;
 	nextStep = function() {};
-	this.onFinish = function() {};
-	this.onStep = manageHistory;
+	onceDone = function() {};
+	self.onFinish = function() {};
+	self.onStarted = function() {};
+	self.onShow = function() {};
+	self.onUnfreeze = self.onUnfreeze ? self.onUnfreeze :  function() {};
+	self.onStep = function() {};
 	window.addEventListener("popstate",
 				function (event) {
 				    var state = event.state;
 				    if (state) {
-					offset = state.offset;
-					currentBlock = state.currentBlock;
-					nextStep = function() {};
-					displayed = state.displayed;
-					setCode(displayed);
-					prettyPrint();
-					playBlocks(self.blocks.slice(currentBlock));	
+					self.gotoStep(state.step);
 				    }
 				});
     };  
@@ -57,34 +58,17 @@ function CodePlayer(startfile, script, selector, options) {
 	    });
 	//jQelement.click(unpause);
 	$.ajax(
-	    {   url: self.startfile, dataType:'text',
-		success:function(startcontent) {
-		    $.ajax(
-			{
-			    url: self.script, dataType:'text', 
-			    success:function(data) {
-				var lines = data.split("\n");
-				var regex = /^([0-9].*)/gim, result;
-				for (var i = 0; i < lines.length ; i++) {
-				    var line = lines[i];
-				    if (regex.test(line)) {
-					self.blocks.push({command:line, diff:[]});
-				    } else if (line == "#p") {
-					self.blocks.push({command:line});
-				    } else if (self.blocks[self.blocks.length - 1].diff) {
-					self.blocks[self.blocks.length - 1].diff.push(line);
-				    }
-				}
-				displayed = startcontent;
-				codeContainer.text(startcontent);
-				prettyPrint();
-				playBlocks(self.blocks);
-				started = true;
-			    },
-			    error: function(err) { console.log(err);}}
-		    );
+	    {
+		url: self.script, dataType:'text', 
+		success:function(data) {
+		    stepNumber = data.split("\n#p").length ;
+		    console.log(stepNumber);
+		    self.lines = data.split("\n");  
+		    playLines(self.lines); 
+		    started = true;
+		    self.onStarted();
 		},
-		error: function(err) { console.log(err); console.log(self.startfile);}}
+		error: function(err) { console.log(err);}}
 	);
 	jQelement.after("<p id='instr'></p>");
     };
@@ -92,11 +76,20 @@ function CodePlayer(startfile, script, selector, options) {
     this.restart = function() {
 	init();
 	message("");
-	playBlocks(self.blocks);
+	playLines(this.lines);
     };
+
+    this.length = function() {
+	return stepNumber;
+    };
+
+    this.currentStep = function() {
+	return currentStep;
+    }
 
     this.show = function() {
 	codeContainer.show();	
+	self.onShow();
     };
 
     this.hide = function() {
@@ -111,21 +104,25 @@ function CodePlayer(startfile, script, selector, options) {
 	frozen = false;
 	if (!started) {
 	    self.start();
+	    self.onStarted = self.onUnfreeze;
+	} else {
+	    self.onUnfreeze();
 	}
     };
 
     function finish() {
 	message("Finished!");
+	prettyPrint();
 	self.freeze();
 	//self.onFinish();			 	
     }
 
-    function playBlocks(blocks) {
-	if (blocks.length) {
-	    playCommand(blocks[0],
+    function playLines(lines) {
+	if (lines.length) {
+	    playLine(lines[0],
 		     function () {
-			 if (blocks.length > 1) {
-			     playBlocks(blocks.slice(1));
+			 if (lines.length > 1) {
+			     playLines(lines.slice(1));
 			 } else {
 			     finish();
 			 }
@@ -135,29 +132,48 @@ function CodePlayer(startfile, script, selector, options) {
 	}
     }
 
+    function scrollTo(pos) {
+	console.log("scrolling to " + pos);
+	var text = codeContainer.text();
+	// we target 5 lines above the insertion point
+	pos = text.slice(0,pos).split("\n").slice(0, -5).join("\n").length;
+	// We don't scroll if we're already within 5 lines
+	if (text.slice(Math.min(pos, lastScrollPoint), Math.max(pos, lastScrollPoint)).split("\n").length < 5) {
+	    return;
+	}
+	lastScrollPoint = pos;
+	codeContainer.text(text.slice(0, pos));
+	var scrollAnchor = $("<ins></ins>");
+	codeContainer.append(scrollAnchor);
+	codeContainer.append($("<span></span>").text(text.slice(pos)));
+	delay = 500;
+	$.scrollTo(scrollAnchor, delay, {onAfter: function() { delay = 0;}});
+    }
+
+
     function highlightInserts(inserts, code, baseOffset) {
 	if (inserts.length) {
-	    console.log(code);
-	    console.log(baseOffset);
 	    var insert = inserts[0];
-	    console.log(insert);
-	    codeContainer.append($("<span></span>").text(code.slice(baseOffset,insert.offset)));
+	    if (baseOffset < insert.offset) {
+		codeContainer.append($("<span></span>").text(code.slice(baseOffset,insert.offset)));
+	    }
 	    if (insert.content.length) {
 		codeContainer.append($("<ins></ins>").text(insert.content));		    
 	    }
 	    highlightInserts(inserts.slice(1), code, insert.offset + insert.content.length);
 	} else {
 	    // insert code
-	    codeContainer.append($("<span></span>").text(code.slice(baseOffset)));
+	    if (baseOffset < code.length) {
+		codeContainer.append($("<span></span>").text(code.slice(baseOffset)));
+	    }
+	    prettyPrint();
 	}
     }
 
-    function finishDiff(next) {
-	if (postContentTo) {
-	    $.post(postContentTo, {file:self.startfile, content: codeContainer.text()});
+    function finishLine(next) {
+	if (!ffwd) {
+	    prettyPrint();
 	}
-	currentBlock++;
-	prettyPrint();
 	next();
     }
 
@@ -165,21 +181,43 @@ function CodePlayer(startfile, script, selector, options) {
 	$("#instr").text(text);
     }
 
+    this.gotoStep = function (step) {
+	ffwd = step;
+	displayMode = "show";
+	if (step < currentStep) {
+	    self.restart();
+	} else {
+	    unpause();
+	}
+    };
+
     function pause(next) {
-	beyondFirstStep = true;
-	var code = codeContainer.text();
-	codeContainer.html("");
-	highlightInserts(inserts, code, 0);
-	prettyPrint();
-	paused = true;
-	inserts = [];
-	if (!nopause) {
+	if (postContentTo) {
+	    $.post(postContentTo, {file:self.url, content: codeContainer.text()});
+	}
+	currentStep++;
+	if (!ffwd || currentStep >= ffwd)
+	    paused = true;
+	if (!nopause && (!ffwd || currentStep >= ffwd)) {
+	    if (!ffwd || currentStep >= ffwd) {
+		displayMode = "type";
+		ffwd = false;
+		if (currentStep > 1) {
+		    var text = codeContainer.text();
+		    codeContainer.html("");
+		    highlightInserts(inserts, text, 0);
+		}
+		inserts = [];
+	    }
 	    message("Press spacebar to continue");
             nextStep = next;
 	} else {
 	    next();
 	}
-	this.onStep();
+	if (!ffwd) {
+	    manageHistory();
+	    self.onStep();
+	}
     }
 
     function unpause() {
@@ -192,8 +230,8 @@ function CodePlayer(startfile, script, selector, options) {
     }
 
     function manageHistory() {
-	var state = {displayed:displayed, offset:offset, currentBlock:currentBlock};
-	history.pushState(state, "Step " + currentBlock, "#s" + currentBlock);
+	var state = {step: currentStep};
+	history.pushState(state, "Step " + currentStep, "#s" + currentStep);
     }
 
     function calculatePosition(search, before) {
@@ -219,9 +257,9 @@ function CodePlayer(startfile, script, selector, options) {
 
     function execute(fn, timeout) {
 	if (!timeout) {
-	    timeout = 20;
+	    timeout = 1;
 	}
-	if (displayMode == "type") {
+	if (displayMode == "type" && currentStep > 0) {
 	    setTimeout(fn, timeout);	
 	    } else {
 		fn();
@@ -232,96 +270,117 @@ function CodePlayer(startfile, script, selector, options) {
 	var text = codeContainer.text();
 	displayed = text.slice(0,pos) + character + text.slice(pos);
 	codeContainer.text(displayed);	
+	//prettyPrint();
     }
 
     function removeCharacter(pos) {
 	var text = codeContainer.text();
-	displayed = text.slice(0,pos -1) + text.slice(pos);
+	displayed = text.slice(0,pos - 1) + text.slice(pos);
 	codeContainer.text(displayed);
-    }
+    }    
 
-    function playCharacter(diff, next) {
-	var line = diff[0].slice(2);
-	if (line && line.indexOf("_") >= 0) {
-	    offset += line.indexOf("_");
-	    // First insert in line
-	    if (diff[0][0] == ">") {
-		currentInsert.offset = offset;
-	    }
-	    var character = line[line.indexOf("_") + 2];
-	    if (!character) {
-		character = "\n";
-	    }
-	    insertCharacter(character, offset);
-	    currentInsert.content += character;
-	    if (line.split("_").length > 2 ) {
-		execute(function()  { playCharacter(["  "  + line.slice(line.indexOf("_") + 2)].concat(diff.slice(1)),next);} );
-	    } else {
-		inserts.push({offset:currentInsert.offset,content:currentInsert.content});
-		currentInsert = {offset:offset,content:""};
-		if (diff.length > 1) {
-		    offset++;
-		    execute(function()  { playCharacter(diff.slice(1), next);});
-		} else {
-		    finishDiff(next);
-		}
-	    }
+    function playCharacter(line, next) {
+	var character = line[0];
+	insertCharacter(character, offset);
+	currentInsert.content += character;
+	offset++;
+	if (line.length > 1 ) {
+	    execute(function()  { playCharacter(line.slice(1), next);} );
 	} else {
 	    inserts.push({offset:currentInsert.offset,content:currentInsert.content});
 	    currentInsert = {offset:offset,content:""};
-	    finishDiff(next);
+	    finishLine(next);
 	}
     }
 
-    function eraseCharacter(diff, next) {
-	var line = diff[0].slice(2);
-	if (line && line.indexOf("_") >= 0) {
-	    offsetErase = offset + line.lastIndexOf("_") - (line.split("_").length - 2 ) *2 + 1;
-	    if (offsetErase > offset) {
-		removeCharacter(offsetErase);
-		execute(function() { eraseCharacter(["  " + line.slice(0, line.lastIndexOf("_"))].concat(diff.slice(1)), next);});
-		//eraseCharacter(line.slice(0, line.lastIndexOf("_")), next);
-	    } else {
-		if (diff.length > 1) { 
-		    execute(function()  { playCharacter(diff.slice(1), next);});
+    function eraseCharacter(next) {
+	if (offsetErase > offset) {
+	    removeCharacter(offsetErase);
+	    offsetErase --;
+	    //execute(function() { eraseCharacter(next);}, 2);	    
+	    eraseCharacter(next);
+	} else {
+	    finishLine(next);
+	}
+    }
+
+    function showInclude(url, next) {
+	var iframe = $("<iframe width='100%'></iframe>");
+	var relUrl = new URI(url);
+	iframe.attr("src",relUrl.resolve(self.script));
+	slideContainer.html();
+	slideContainer.append(iframe);
+	iframe.attr("height",codeContainer.get(0).clientHeight);
+	jQelement.addClass("flip");		    	
+	var el = jQelement.bind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",
+				function () {
+				    finishLine(next);
+				    jQelement.unbind("webkitTransitionEnd oTransitionEnd MSTransitionEnd transitionend",el);
+				});	
+    }
+
+    function playLine(line, next) {
+	var command = "";
+	if (line.length > 0 && line[0] == '#') {
+	    command = line[1];
+	    if (command == "a" || command == "b" || command == "r") {
+		var search = line.slice(2).split("→")[0];
+		var pos = calculatePosition(search, (command == "b"));
+		if (offset == -1) {
+		    finishLine(next);
 		} else {
-		    finishDiff(next);
+		    offset = pos;
 		}
+		if (command == "r") {
+		    var until = line.slice(2).split("→").slice(1).join("→");
+		    offsetErase = calculatePosition(until, true);
+		}
+	    } else if (command == "$") {
+		offset = displayed.length;
+	    } else if (command == "^") {
+		offset = 0;
+	    } else if (command == "-") {
+		offset = Math.max(displayed.slice(0,displayed.slice(0,offset).lastIndexOf("\n")).lastIndexOf("\n") + 1, 0);
 	    }
+	    if (command == "#") {
+		command = "";
+		line = line.slice(1);
+	    }
+	}
+	if (command != "p") {
+  	    if ((!ffwd || ffwd < currentStep) && currentStep > 0)
+		scrollTo(offset);
+	}
+	if (command == "") {
+	    line += "\n";
+	}
+	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
+	    currentInsert.offset = offset;
+	} else if (command == "r" || command == "@" || command == "p") {
+	    currentInsert.content = "";
+	} else if (command == "") {
+	    if (currentInsert.content == "") {
+		currentInsert.offset = offset;
+	    }
+	}
+	if (command == "p") {
+	    pause(next);
+	} else if (command == "@") {
+	    // #@foo means show "foo" in an iframe in slideContainer
+	    if (line.length > 2) {
+		showInclude(line.slice(2), next);
+	    }
+	} else if (command == "r") {
+	    setTimeout(function() { eraseCharacter(next);}, delay);
+	} else if (command != "") {
+	    finishLine(next);
 	} else {
-	    finishDiff(next);
+	    jQelement.removeClass("flip");
+	    // Reinit code shown
+	    setCode(displayed);
+	    currentInsert = {offset: offset, content: ""};
+	    setTimeout(function() { playCharacter(line,next);}, delay);
 	}
     }
 
-    function playCommand(block, next) {
-	var command = block.command;
-	if (command == "#p") {
-	    pause(next);
-	} else {
-	    var diff = block.diff;
-	    // TODO input error management
-	    var paramRegex = new RegExp("([0-9]+),?([0-9]+)?([adc])([0-9]+),?([0-9]+)?");
-	    var params = command.match(paramRegex).slice(1);
-	    // 1,2a1 => params=[1,2,'a',1,null]
-	    var operation = params[2];
-	    var startLine = 0;
-	    startLine = params[3];
-	    if (startLine > 1) {
-		offset = displayed.split("\n").slice(0,startLine - 1).join("\n").length + 1;
-	    } else {
-		offset = 0;
-	    }
-	    if (operation == "a") {
-		currentInsert = {offset:offset, content:""};
-		playCharacter(diff,next);
-	    } else if (operation == "d") {
-		eraseCharacter(diff, next);
-	    } else if (operation == "c") {
-		eraseCharacter([diff[0]], 
-			       function () {
-				   playCharacter([diff[2]], next);
-			       });
-	    }
-	}
-    }
 };
