@@ -94,7 +94,7 @@ function CodePlayer(url, script, selector, options) {
     };
 
     this.hide = function() {
-        codeContainer.addClass("back");
+        codeContainer.hide();
     };
 
     this.freeze = function() {
