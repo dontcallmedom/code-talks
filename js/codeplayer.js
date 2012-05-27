@@ -89,12 +89,14 @@ function CodePlayer(url, script, selector, options) {
     }
 
     this.show = function() {
-	codeContainer.show();	
+	codeContainer.addClass("show");
+	codeContainer.removeClass("hide");
 	self.onShow();
     };
 
     this.hide = function() {
-        codeContainer.hide();
+	codeContainer.addClass("hide");
+	codeContainer.removeClass("show");
     };
 
     this.freeze = function() {

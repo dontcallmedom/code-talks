@@ -28,7 +28,7 @@ font-size:2em;
  outline:0;
 }
 
-.codeplayer .front, .codeplayer .back {
+.codeplayer .show, .codeplayer .hide {
   margin:0;
  position:absolute;
  top:0;
@@ -46,7 +46,7 @@ font-size:2em;
  -webkit-transition: all .4s ease-in-out;
  transition: all .4s ease-in-out;
 }
-.codeplayer .front {
+.codeplayer .show {
  z-index:900;
  -webkit-transform: rotateY(0deg);
  -moz-transform: rotateY(0deg);
@@ -64,18 +64,18 @@ font-size:2em;
   font-weight:bold;
 }
 
-.codeplayer.flip .front {
+.codeplayer.flip .show {
     z-index: 900;
     -webkit-transform: rotateY(180deg);
     -moz-transform: rotateY(180deg);
 }
 
-.codeplayer .back {
+.codeplayer .hide {
     -webkit-transform: rotateY(-180deg);
     -moz-transform: rotateY(-180deg);
 }
 
-.codeplayer.flip .back {
+.codeplayer.flip .hide {
     z-index: 1000;
     -webkit-transform: rotateY(0deg);
     -moz-transform: rotateY(0deg);
