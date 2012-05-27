@@ -21,22 +21,16 @@
   var players = {};
   var currentPlayer = null;
   var fileButton;
-  $("input.playerselector").each(function() {
-    file = $(this).val();   
-    players[file] = new CodePlayer(file, $(this).attr("data-script"), "#play");
-  });
-$("input.playerselector").live("click", function() {
-  input = $(this);
-  file = input.val();
+
+function switchTo(file) {
   if (currentPlayer) {
     currentPlayer.freeze();
     currentPlayer.hide();
     $("select[data-script=" + currentPlayer.url + "]").replaceWith(fileButton);
   }
   currentPlayer = players[file];
-
   currentPlayer.onUnfreeze = function () {
-    fileButton = input.clone();
+    fileButton = $("input[value=" + file + "]").clone();
     var stepSelector = $("<select></select>").attr("data-script",file);
     for (var i = 0 ; i < currentPlayer.length() ; i++) {
       var opt = $("<option></option>").text("Step " + i).val(i);
@@ -47,7 +41,7 @@ $("input.playerselector").live("click", function() {
        console.log($(this).val());
        currentPlayer.gotoStep($(this).val());
     });
-    input.replaceWith(stepSelector);
+    fileButton.replaceWith(stepSelector);
     currentPlayer.onStep = function() {
        $(":selected", stepSelector).removeAttr("disabled");
        $("option[value=" + currentPlayer.currentStep() + "]", stepSelector).attr("disabled", true);
@@ -57,8 +51,21 @@ $("input.playerselector").live("click", function() {
   };
   currentPlayer.unfreeze();
   currentPlayer.show();
+}
 
+  $("input.playerselector").each(function() {
+    file = $(this).val();   
+    console.log(file);
+    players[file] = new CodePlayer(file, $(this).attr("data-script"), "#play");
+    players[file].onSwitch = switchTo;
+  });
+
+
+$("input.playerselector").live("click", function() {
+  console.log($(this).val());			 
+  switchTo($(this).val());
 });
+
 </script>
 </body>
 </html>
