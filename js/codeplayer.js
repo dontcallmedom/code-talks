@@ -29,6 +29,7 @@ function CodePlayer(url, script, selector, options) {
 	onceDone = function() {};
 	self.onFinish = function() {};
 	self.onStarted = function() {};
+	self.onSwitch = self.onSwitch ? self.onSwitch : function() {};
 	self.onShow = function() {};
 	self.onUnfreeze = self.onUnfreeze ? self.onUnfreeze :  function() {};
 	self.onStep = function() {};
@@ -59,7 +60,7 @@ function CodePlayer(url, script, selector, options) {
 	//jQelement.click(unpause);
 	$.ajax(
 	    {
-		url: self.script, dataType:'text', 
+		url: self.script, dataType:'text',
 		success:function(data) {
 		    stepNumber = data.split("\n#p").length ;
 		    console.log(stepNumber);
@@ -93,7 +94,7 @@ function CodePlayer(url, script, selector, options) {
     };
 
     this.hide = function() {
-	codeContainer.hide();	
+        codeContainer.addClass("back");
     };
 
     this.freeze = function() {
@@ -347,7 +348,7 @@ function CodePlayer(url, script, selector, options) {
 		line = line.slice(1);
 	    }
 	}
-	if (command != "p") {
+	if (command != "p" && command != "s" && command != "@") {
   	    if ((!ffwd || ffwd < currentStep) && currentStep > 0)
 		scrollTo(offset);
 	}
@@ -356,7 +357,7 @@ function CodePlayer(url, script, selector, options) {
 	}
 	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
 	    currentInsert.offset = offset;
-	} else if (command == "r" || command == "@" || command == "p") {
+	} else if (command == "r" || command == "@" || command == "p" || command == "s") {
 	    currentInsert.content = "";
 	} else if (command == "") {
 	    if (currentInsert.content == "") {
@@ -370,6 +371,9 @@ function CodePlayer(url, script, selector, options) {
 	    if (line.length > 2) {
 		showInclude(line.slice(2), next);
 	    }
+	} else if (command == "s") {
+	    self.onSwitch(line.slice(2));
+	    pause(next);
 	} else if (command == "r") {
 	    setTimeout(function() { eraseCharacter(next);}, delay);
 	} else if (command != "") {
