@@ -145,13 +145,17 @@ function CodePlayer(url, script, selector, options) {
 	    console.log("no need to scroll");
 	    return;
 	}
-	console.log("scrolling from " + lastScrollPoint + " to " + pos);
-
+	console.log("scrolling from " + lastScrollPoint + " to " + pos);	
 	lastScrollPoint = pos;
-	codeContainer.text(text.slice(0, pos));
-	var scrollAnchor = $("<ins></ins>");
-	codeContainer.append(scrollAnchor);
-	codeContainer.append($("<span></span>").text(text.slice(pos)));
+	var scrollAnchor;
+	if (pos == 0) {
+	    scrollAnchor = jQelement;
+	} else {
+	    codeContainer.text(text.slice(0, pos));
+	    scrollAnchor = $("<ins></ins>");
+	    codeContainer.append(scrollAnchor);
+	    codeContainer.append($("<span></span>").text(text.slice(pos)));
+	}
 	delay = 500;
 	$.scrollTo(scrollAnchor, delay, {onAfter: function() { delay = 0;}});
     }
@@ -378,6 +382,7 @@ function CodePlayer(url, script, selector, options) {
 	    }
 	} else if (command == "s") {
 	    if (!ffwd) {
+		lastScrollPoint = Infinity;
 		self.onSwitch(line.slice(2));
 	    }
 	    pause(next);
