@@ -22,7 +22,7 @@ function CodePlayer(url, script, selector, options) {
 	currentInsert = {};
 	currentStep = 0;
 	offset = 0;
-	lastScrollPoint = 0;
+	lastScrollPoint = Infinity;
 	inserts = [];
 	delay = 0;
 	nextStep = function() {};
@@ -60,10 +60,9 @@ function CodePlayer(url, script, selector, options) {
 	//jQelement.click(unpause);
 	$.ajax(
 	    {
-		url: self.script, dataType:'text',
+		url: self.script, dataType:'text', 
 		success:function(data) {
 		    stepNumber = data.split("\n#p").length ;
-		    console.log(stepNumber);
 		    self.lines = data.split("\n");  
 		    playLines(self.lines); 
 		    started = true;
@@ -107,8 +106,10 @@ function CodePlayer(url, script, selector, options) {
 	frozen = false;
 	if (!started) {
 	    self.start();
+	    scrollTo(0);
 	    self.onStarted = self.onUnfreeze;
 	} else {
+	    scrollTo(offset);
 	    self.onUnfreeze();
 	}
     };
@@ -136,14 +137,16 @@ function CodePlayer(url, script, selector, options) {
     }
 
     function scrollTo(pos) {
-	console.log("scrolling to " + pos);
 	var text = codeContainer.text();
 	// we target 5 lines above the insertion point
 	pos = text.slice(0,pos).split("\n").slice(0, -5).join("\n").length;
 	// We don't scroll if we're already within 5 lines
 	if (text.slice(Math.min(pos, lastScrollPoint), Math.max(pos, lastScrollPoint)).split("\n").length < 5) {
+	    console.log("no need to scroll");
 	    return;
 	}
+	console.log("scrolling from " + lastScrollPoint + " to " + pos);
+
 	lastScrollPoint = pos;
 	codeContainer.text(text.slice(0, pos));
 	var scrollAnchor = $("<ins></ins>");
@@ -351,7 +354,7 @@ function CodePlayer(url, script, selector, options) {
 	    }
 	}
 	if (command != "p" && command != "s" && command != "@") {
-  	    if ((!ffwd || ffwd < currentStep) && currentStep > 0)
+  	    if ((!ffwd || ffwd < currentStep))
 		scrollTo(offset);
 	}
 	if (command == "") {
@@ -374,7 +377,9 @@ function CodePlayer(url, script, selector, options) {
 		showInclude(line.slice(2), next);
 	    }
 	} else if (command == "s") {
-	    self.onSwitch(line.slice(2));
+	    if (!ffwd) {
+		self.onSwitch(line.slice(2));
+	    }
 	    pause(next);
 	} else if (command == "r") {
 	    setTimeout(function() { eraseCharacter(next);}, delay);
