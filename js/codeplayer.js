@@ -141,7 +141,7 @@ function CodePlayer(url, script, selector, options) {
 	// we target 5 lines above the insertion point
 	pos = text.slice(0,pos).split("\n").slice(0, -5).join("\n").length;
 	// We don't scroll if we're already within 5 lines
-	if (text.slice(Math.min(pos, lastScrollPoint), Math.max(pos, lastScrollPoint)).split("\n").length < 5) {
+	if (text.slice(Math.min(pos, lastScrollPoint), Math.max(pos, lastScrollPoint)).split("\n").length < 5 && text.length) {
 	    console.log("no need to scroll");
 	    return;
 	}
