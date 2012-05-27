@@ -38,7 +38,6 @@ function switchTo(file) {
     }
     stepSelector.val(currentPlayer.currentStep());
     stepSelector.change(function() {
-       console.log($(this).val());
        currentPlayer.gotoStep($(this).val());
     });
     fileButton.replaceWith(stepSelector);
