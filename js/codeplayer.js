@@ -5,7 +5,7 @@ function CodePlayer(url, script, selector, options) {
     this.options = (options ? options : {});
     var self = this;
     var jQelement = $(selector);
-    var displayed, frozen, offset, currentInsert, inserts, offsetErase, nextStep, displayMode, prevDisplayMode, codeContainer, slideContainer, paused, started, nopause, postContentTo, lastScrollPoint, ffwd, stepNumber, currentStep, delay, onceDone;
+    var displayed, frozen, offset, currentInsert, inserts, offsetErase, nextStep, addNewLine, displayMode, prevDisplayMode, codeContainer, slideContainer, paused, started, nopause, postContentTo, lastScrollPoint, ffwd, stepNumber, currentStep, delay, onceDone;
 
     function init () {
 	jQelement.addClass("codeplayer");
@@ -20,6 +20,7 @@ function CodePlayer(url, script, selector, options) {
 	ffwd = false;
 	started = false;
 	currentInsert = {};
+	addNewLine = true;
 	currentStep = 0;
 	offset = 0;
 	lastScrollPoint = Infinity;
@@ -333,7 +334,11 @@ function CodePlayer(url, script, selector, options) {
 	var command = "";
 	if (line.length > 0 && line[0] == '#') {
 	    command = line[1];
-	    if (command == "a" || command == "b" || command == "r") {
+	    if (command != "") {
+		addNewLine = true;
+	    }
+	    if (command == "a" || command == "b" || command == "r" || command == "i") {
+		addNewLine = command != "i";
 		var search = line.slice(2).split("→")[0];
 		var pos = calculatePosition(search, (command == "b"));
 		if (offset == -1) {
@@ -362,9 +367,11 @@ function CodePlayer(url, script, selector, options) {
 		scrollTo(offset);
 	}
 	if (command == "") {
-	    line += "\n";
+	    if (addNewLine) {
+		line += "\n";
+	    }
 	}
-	if (command == "a" || command =="b" || command == "$" || command == "^" || command == "-") {
+	if (command == "a" || command == "i" || command =="b" || command == "$" || command == "^" || command == "-") {
 	    currentInsert.offset = offset;
 	} else if (command == "r" || command == "@" || command == "p" || command == "s") {
 	    currentInsert.content = "";

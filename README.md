@@ -4,7 +4,7 @@ That script uses the following syntax:
 * any line not starting with a # will be displayed as a regular line of code
 * a line starting with a # starts a special operation
 * #p means that the viewer should pause before interpreting the next line (and until spacebar is hit)
-* #a (resp #b) moves the insert point after (resp before) to the first match of the string following the command
+* #a (resp #b) and #i moves the insert point after (resp before) to the first match of the string following the command; #a inserts a line return after, while #i doesn't
 * #$ moves to end of file
 * #^ moves to start of file
 * #- moves to previous line
